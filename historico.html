@@ -125,8 +125,8 @@
 
   function resultBadgeHtml(ev){
     if(ev.our_score == null || ev.opponent_score == null) return '';
-    if(ev.our_score < ev.opponent_score) return '<span class="resultBadge win">Vitória</span>';
-    if(ev.our_score > ev.opponent_score) return '<span class="resultBadge loss">Derrota</span>';
+    if(ev.our_score > ev.opponent_score) return '<span class="resultBadge win">Vitória</span>';
+    if(ev.our_score < ev.opponent_score) return '<span class="resultBadge loss">Derrota</span>';
     return '<span class="resultBadge draw">Empate</span>';
   }
 
