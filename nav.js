@@ -6,10 +6,10 @@ function renderTopNav(supabaseClient, profile, currentPage){
   if(!navEl) return;
 
   const items = [
-    { href:'/painel.html', label:'Meu Painel', page:'painel', show:true },
-    { href:'/ranking.html', label:'Ranking Geral', page:'ranking', show:true },
-    { href:'/historico.html', label:'Histórico GvGs', page:'historico', show:true },
-    { href:'/staff.html', label:'Painel da Staff', page:'staff', show: !!profile.staff },
+    { href:'painel.html', label:'Meu Painel', page:'painel', show:true },
+    { href:'ranking.html', label:'Ranking Geral', page:'ranking', show:true },
+    { href:'historico.html', label:'Histórico GvGs', page:'historico', show:true },
+    { href:'staff.html', label:'Painel da Staff', page:'staff', show: !!profile.staff },
   ];
 
   navEl.innerHTML = items.filter(i => i.show).map(i =>
@@ -18,6 +18,6 @@ function renderTopNav(supabaseClient, profile, currentPage){
 
   document.getElementById('navLogoutBtn').addEventListener('click', async ()=>{
     await supabaseClient.auth.signOut();
-    window.location.href = '/';
+    window.location.href = 'index.html';
   });
 }

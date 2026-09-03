@@ -260,7 +260,7 @@
     }
 
     showMsg(msgEl, `Bem-vindo(a), ${profile.nick}! Redirecionando...`, 'ok');
-    setTimeout(()=>{ window.location.href = '/painel.html'; }, 900);
+    setTimeout(()=>{ window.location.href = 'painel.html'; }, 900);
   });
 
   // se já tiver sessão ativa ao abrir a página, confere aprovação e redireciona
@@ -269,7 +269,7 @@
     if(session){
       const { data: profile } = await client.from('profiles').select('approved, removed').eq('id', session.user.id).single();
       if(profile && profile.approved && !profile.removed){
-        window.location.href = '/painel.html';
+        window.location.href = 'painel.html';
       } else if(profile && profile.removed){
         await client.auth.signOut();
       }

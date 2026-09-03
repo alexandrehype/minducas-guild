@@ -400,7 +400,7 @@
     const { data: { session } } = await client.auth.getSession();
     if(!session){
       gateMsg.textContent = 'Você precisa entrar pra acessar essa página.';
-      setTimeout(()=>{ window.location.href = '/'; }, 1200);
+      setTimeout(()=>{ window.location.href = 'index.html'; }, 1200);
       return;
     }
 

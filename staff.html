@@ -94,7 +94,7 @@
     </header>
 
     <div class="row-actions" id="ownerActions" style="display:none; margin-bottom:20px;">
-      <a href="/importar.html" class="btn approve" style="text-decoration:none; display:inline-block;">⬇ Importar GvG</a>
+      <a href="importar.html" class="btn approve" style="text-decoration:none; display:inline-block;">⬇ Importar GvG</a>
     </div>
 
     <section>
@@ -294,7 +294,7 @@
     const { data: { session } } = await client.auth.getSession();
     if(!session){
       gateMsg.textContent = 'Você precisa entrar pra acessar essa página.';
-      setTimeout(()=>{ window.location.href = '/'; }, 1500);
+      setTimeout(()=>{ window.location.href = 'index.html'; }, 1500);
       return;
     }
 
