@@ -35,7 +35,7 @@ body{
 .topbar .brandText .subtitle{color:var(--muted); font-size:11px; font-family:'JetBrains Mono',ui-monospace,monospace; margin-top:4px;}
 
 /* ---------- Layout geral: menu lateral (só navegação) + conteúdo ---------- */
-.layout{display:block; min-height:calc(100vh - 126px);}
+.layout{display:block; min-height:calc(100vh - 126px); padding-left:var(--sidebar-w);}
 
 .sidebar{
   width:var(--sidebar-w);
@@ -55,13 +55,13 @@ body{
 .navbtn{border:1px solid var(--line); color:var(--muted); margin-top:14px;}
 .navbtn:hover{color:var(--text); border-color:var(--gold-dim);}
 
-.wrap{margin-left:var(--sidebar-w); max-width:var(--content-max); padding:32px 28px 80px;}
+.wrap{max-width:var(--content-max); margin:0 auto; padding:32px 28px 80px;}
 
 /* Em telas pequenas, o menu lateral vira uma barra horizontal logo abaixo da barra superior */
 @media (max-width: 820px){
   .topbar{padding:12px 16px;}
   .topbar .bannerArt{max-height:60px;}
-  .layout{min-height:auto;}
+  .layout{min-height:auto; padding-left:0;}
   .sidebar{
     width:100%; height:auto; position:sticky; top:0; left:auto;
     border-right:none; border-bottom:1px solid var(--line);
