@@ -1,9 +1,9 @@
-// nav.js — menu superior padronizado, usado em painel.html, staff.html e importar.html
-// espera um elemento <nav class="topnav" id="topNav"></nav> na página
+// nav.js — menu lateral padronizado, usado em todas as páginas internas do site
+// espera um elemento <aside id="sidebar"></aside> na página
 
 function renderTopNav(supabaseClient, profile, currentPage){
-  const navEl = document.getElementById('topNav');
-  if(!navEl) return;
+  const el = document.getElementById('sidebar');
+  if(!el) return;
 
   const items = [
     { href:'painel.html', label:'Meu Painel', page:'painel', show:true },
@@ -12,9 +12,18 @@ function renderTopNav(supabaseClient, profile, currentPage){
     { href:'staff.html', label:'Painel da Staff', page:'staff', show: !!profile.staff },
   ];
 
-  navEl.innerHTML = items.filter(i => i.show).map(i =>
-    `<a href="${i.href}" class="navlink${i.page === currentPage ? ' active' : ''}">${i.label}</a>`
-  ).join('') + `<button class="navlink navbtn" id="navLogoutBtn">Sair</button>`;
+  el.innerHTML = `
+    <div class="brand">
+      <div class="flags"><span></span><span></span><span></span></div>
+      <h1>Minducas</h1>
+      <div class="subtitle">guilda ragnarok origin</div>
+    </div>
+    <nav>
+      ${items.filter(i => i.show).map(i =>
+        `<a href="${i.href}" class="navlink${i.page === currentPage ? ' active' : ''}">${i.label}</a>`
+      ).join('')}
+      <button class="navlink navbtn" id="navLogoutBtn">Sair</button>
+    </nav>`;
 
   document.getElementById('navLogoutBtn').addEventListener('click', async ()=>{
     await supabaseClient.auth.signOut();

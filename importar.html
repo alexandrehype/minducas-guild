@@ -7,48 +7,11 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=EB+Garamond:ital,wght@0,400;0,500;0,600;1,400&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="theme.css">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 <script src="nav.js"></script>
 <script src="helpers.js"></script>
 <style>
-  :root{
-    --bg:#121014; --panel:#1c1922; --panel-2:#221e29; --line:#332f3c;
-    --text:#ece7de; --muted:#948d9c; --gold:#d4a94a; --gold-dim:#8a713a;
-    --red:#b3453f; --green:#6a9955; --teal:#4f8f8a; --violet:#8b7fc7;
-  }
-  *{box-sizing:border-box;}
-  body{
-    margin:0; min-height:100vh;
-    background:
-      radial-gradient(ellipse at top left, #1a1620 0%, transparent 55%),
-      radial-gradient(ellipse at bottom right, #171320 0%, transparent 55%),
-      var(--bg);
-    color:var(--text); font-family: 'EB Garamond', Georgia, serif;
-    padding:32px 18px 80px;
-  }
-  .wrap{max-width:1100px; margin:0 auto;}
-  header{display:flex; align-items:flex-end; justify-content:space-between; gap:16px;
-    border-bottom:2px solid var(--gold-dim); padding-bottom:16px; margin-bottom:26px; flex-wrap:wrap;}
-  .flags{display:flex; gap:6px; margin-bottom:6px;}
-  .flags span{width:8px;height:8px;border-radius:50%;background:var(--gold); box-shadow:0 0 6px var(--gold);}
-  h1{font-family:'Cinzel',Georgia,serif; font-weight:600; font-size:24px; letter-spacing:1px; text-transform:uppercase; color:var(--gold); margin:0;}
-  .subtitle{color:var(--muted); font-size:12px; font-family:'JetBrains Mono',ui-monospace,monospace; margin-top:4px;}
-  .topnav{display:flex; align-items:center; gap:6px; flex-wrap:wrap;}
-  .navlink{
-    font-family:'JetBrains Mono',ui-monospace,monospace; font-weight:600; font-size:11px;
-    letter-spacing:0.5px; text-transform:uppercase; color:var(--muted); text-decoration:none;
-    padding:8px 14px; border-radius:3px; border:1px solid transparent; background:none; cursor:pointer;
-  }
-  .navlink:hover{color:var(--text); border-color:var(--line);}
-  .navlink.active{background:var(--gold); color:#1a1610; font-weight:700;}
-  .navbtn{border:1px solid var(--line); color:var(--muted);}
-  .navbtn:hover{color:var(--text); border-color:var(--gold-dim);}
-
-  section{background:var(--panel); border:1px solid var(--line); border-radius:4px; padding:20px 22px; margin-bottom:20px;}
-  section > h2{font-family:'JetBrains Mono',ui-monospace,monospace; font-weight:600; font-size:12px; letter-spacing:2px; text-transform:uppercase;
-    color:var(--gold); margin:0 0 14px; display:flex; align-items:center; gap:10px;}
-  section > h2::after{content:""; flex:1; height:1px; background:var(--line);}
-
   .dropzone{
     border:1px dashed var(--gold-dim); border-radius:4px; padding:26px; text-align:center;
     color:var(--muted); font-size:13px; cursor:pointer; background:var(--panel-2);
@@ -62,59 +25,19 @@
   .sessionInfo .item .l{color:var(--muted); font-size:10px; text-transform:uppercase; letter-spacing:0.5px; display:block; margin-bottom:3px;}
   .sessionInfo .item .v{color:var(--gold); font-weight:600;}
 
-  .btn{font-family:'JetBrains Mono',ui-monospace,monospace; font-weight:600; font-size:11px; letter-spacing:0.5px; text-transform:uppercase;
-    border:none; padding:9px 16px; border-radius:3px; cursor:pointer; margin-right:8px;}
-  .btn.primary{background:var(--gold); color:#1a1610;}
-  .btn.primary:hover{background:#e3ba5c;}
-  .btn.secondary{background:transparent; border:1px solid var(--line); color:var(--muted);}
-  .btn.secondary:hover{color:var(--text); border-color:var(--gold-dim);}
-  .btn:disabled{opacity:.5; cursor:not-allowed;}
-
-  .table-scroll{overflow-x:auto;}
-  table{width:100%; border-collapse:collapse; font-size:12.5px; min-width:900px;}
-  th{font-family:'JetBrains Mono',ui-monospace,monospace; font-weight:600; font-size:10px; letter-spacing:0.5px; text-transform:uppercase;
-    color:var(--muted); text-align:left; padding:7px 6px; border-bottom:1px solid var(--line);}
-  td{padding:6px; border-bottom:1px solid #26222d;}
-  .num{text-align:center; font-family:'JetBrains Mono',ui-monospace,monospace;}
-  tr:hover td{background:#221f28;}
-
-  .badge{font-family:'JetBrains Mono',ui-monospace,monospace; font-weight:600; font-size:10px; padding:2px 7px; border-radius:3px; text-transform:uppercase;}
   .badge.linked{background:rgba(106,153,85,.15); color:var(--green);}
   .badge.unlinked{background:rgba(212,169,74,.15); color:var(--gold);}
 
-  .arena-tag{
-    font-family:'JetBrains Mono',ui-monospace,monospace; font-weight:600; font-size:10px; letter-spacing:0.5px;
-    text-transform:uppercase; padding:2px 7px; border-radius:3px;
-  }
-  .arena-primaria{background:rgba(212,169,74,.15); color:var(--gold);}
-  .arena-secundaria{background:rgba(79,143,138,.15); color:var(--teal);}
-  .format-tag{
-    font-family:'JetBrains Mono',ui-monospace,monospace; font-weight:600; font-size:10px; letter-spacing:0.3px;
-    padding:2px 7px; border-radius:3px; display:inline-block; white-space:nowrap;
-  }
-  .fmt-marca{background:rgba(212,169,74,.15); color:var(--gold);}
-  .fmt-chefe{background:rgba(179,69,63,.15); color:var(--red);}
-  .fmt-occ{background:rgba(79,143,138,.15); color:var(--teal);}
-  .fmt-mixed{background:rgba(139,127,199,.15); color:var(--violet);}
-  .fmt-none{background:transparent; color:var(--muted);}
-
-  .status{font-size:12px; color:var(--muted); font-family:'JetBrains Mono',ui-monospace,monospace; margin-top:10px; min-height:16px;}
-  .status.err{color:var(--red);}
-  .status.ok{color:var(--green);}
-
-  .gate{max-width:420px; margin:80px auto; text-align:center;}
-  .gate p{color:var(--muted); font-family:'JetBrains Mono',ui-monospace,monospace; font-size:13px;}
+  table{min-width:900px;}
 </style>
 </head>
 <body>
+<div class="layout">
+  <aside class="sidebar" id="sidebar"></aside>
   <div class="wrap" id="app" style="display:none;">
     <header>
-      <div>
-        <div class="flags"><span></span><span></span><span></span></div>
-        <h1>Importar GvG</h1>
-        <div class="subtitle">acesso restrito ao dono da guilda</div>
-      </div>
-      <nav class="topnav" id="topNav"></nav>
+      <h1 class="pageTitle">Importar GvG</h1>
+      <div class="subtitle">acesso restrito ao dono da guilda</div>
     </header>
 
     <section>
@@ -156,6 +79,7 @@
       <div class="status" id="importStatus"></div>
     </section>
   </div>
+</div>
 
   <div class="gate" id="gate">
     <p id="gateMsg">Verificando acesso...</p>

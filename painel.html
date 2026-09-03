@@ -7,58 +7,14 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=EB+Garamond:ital,wght@0,400;0,500;0,600;1,400&family=JetBrains+Mono:wght@400;500;600;700&family=Russo+One&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="theme.css">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 <script src="nav.js"></script>
 <script src="helpers.js"></script>
 <style>
-  :root{
-    --bg:#121014; --panel:#1c1922; --panel-2:#221e29; --line:#332f3c;
-    --text:#ece7de; --muted:#948d9c; --gold:#d4a94a; --gold-dim:#8a713a;
-    --red:#b3453f; --green:#6a9955; --teal:#4f8f8a; --violet:#8b7fc7;
-  }
-  *{box-sizing:border-box;}
-  body{
-    margin:0; min-height:100vh;
-    background:
-      radial-gradient(ellipse at top left, #1a1620 0%, transparent 55%),
-      radial-gradient(ellipse at bottom right, #171320 0%, transparent 55%),
-      var(--bg);
-    color:var(--text); font-family: 'EB Garamond', Georgia, serif;
-    padding:32px 18px 80px;
-  }
-  .wrap{max-width:760px; margin:0 auto;}
-  header{display:flex; align-items:flex-end; justify-content:space-between; gap:16px;
-    border-bottom:2px solid var(--gold-dim); padding-bottom:16px; margin-bottom:26px; flex-wrap:wrap;}
-  .flags{display:flex; gap:6px; margin-bottom:6px;}
-  .flags span{width:8px;height:8px;border-radius:50%;background:var(--gold); box-shadow:0 0 6px var(--gold);}
-  h1{font-family:'Cinzel',Georgia,serif; font-size:24px; letter-spacing:1px; text-transform:uppercase; color:var(--gold); font-weight:600; margin:0;}
-  .subtitle{color:var(--muted); font-size:12px; font-family: 'JetBrains Mono', ui-monospace, Menlo, monospace; margin-top:4px;}
-  nav{display:flex; gap:16px; align-items:center;}
-  .topnav{display:flex; align-items:center; gap:6px; flex-wrap:wrap;}
-  .navlink{
-    font-family:'JetBrains Mono', ui-monospace, Menlo, monospace; font-weight:600; font-size:11px;
-    letter-spacing:0.5px; text-transform:uppercase; color:var(--muted); text-decoration:none;
-    padding:8px 14px; border-radius:3px; border:1px solid transparent; background:none; cursor:pointer;
-  }
-  .navlink:hover{color:var(--text); border-color:var(--line);}
-  .navlink.active{background:var(--gold); color:#1a1610; font-weight:700;}
-  .navbtn{border:1px solid var(--line); color:var(--muted);}
-  .navbtn:hover{color:var(--text); border-color:var(--gold-dim);}
-
-  section{background:var(--panel); border:1px solid var(--line); border-radius:4px; padding:24px 26px; margin-bottom:20px;}
-  section > h2{font-family: 'JetBrains Mono', ui-monospace, Menlo, monospace; font-size:12px; letter-spacing:2px; text-transform:uppercase;
-    color:var(--gold); margin:0 0 18px; display:flex; align-items:center; gap:10px;}
-  section > h2::after{content:""; flex:1; height:1px; background:var(--line);}
-
   .charHead{margin-bottom:22px;}
   .charName{font-family:'Russo One',Georgia,serif; font-weight:400; letter-spacing:0.5px; font-size:24px; color:var(--text); display:flex; align-items:center;}
   .charMeta{display:flex; gap:8px; margin-top:6px; flex-wrap:wrap; align-items:center;}
-  .tag{font-family: 'JetBrains Mono', ui-monospace, Menlo, monospace; font-weight:600; font-size:10.5px; letter-spacing:0.5px; text-transform:uppercase;
-    padding:3px 9px; border-radius:3px;}
-  .tag.g-Ataque{background:rgba(179,69,63,.15); color:var(--red);}
-  .tag.g-Versatil{background:rgba(79,143,138,.15); color:var(--teal);}
-  .tag.g-Suporte{background:rgba(139,127,199,.15); color:var(--violet);}
-  .tag.staff{background:rgba(212,169,74,.15); color:var(--gold);}
 
   .highlights{display:grid; grid-template-columns:repeat(3, 1fr); gap:14px; margin-bottom:20px;}
   .hCard{background:var(--panel-2); border:1px solid var(--gold-dim); border-radius:4px; padding:18px 12px; text-align:center;}
@@ -69,16 +25,6 @@
   .stat{background:var(--panel-2); border:1px solid var(--line); border-radius:3px; padding:14px 12px; text-align:center;}
   .stat .v{font-family: 'JetBrains Mono', ui-monospace, Menlo, monospace; font-size:20px; color:var(--text); font-weight:bold;}
   .stat .l{font-family: 'JetBrains Mono', ui-monospace, Menlo, monospace; font-weight:600; font-size:10px; color:var(--muted); text-transform:uppercase; letter-spacing:0.5px; margin-top:4px;}
-  .statIcon{width:22px; height:22px; object-fit:contain; opacity:.85; display:block; margin:0 auto 6px;}
-  .classIconImg{width:28px; height:28px; object-fit:contain; vertical-align:middle; margin-right:8px;}
-
-  .gate{max-width:420px; margin:80px auto; text-align:center;}
-  .gate p{color:var(--muted); font-family: 'JetBrains Mono', ui-monospace, Menlo, monospace; font-size:13px;}
-  .btn{font-family: 'JetBrains Mono', ui-monospace, Menlo, monospace; font-weight:600; font-size:11px; letter-spacing:0.5px; text-transform:uppercase;
-    background:transparent; border:1px solid var(--line); color:var(--muted); padding:8px 14px; border-radius:3px; cursor:pointer;}
-  .btn:hover{color:var(--text); border-color:var(--gold-dim);}
-  .btn.primary{background:var(--gold); color:#1a1610; border:none; font-weight:bold;}
-  .btn.primary:hover{background:#e3ba5c;}
 
   /* Modal de edição */
   .modal-overlay{position:fixed; inset:0; background:rgba(8,7,10,.72); display:flex; align-items:center; justify-content:center; z-index:999; padding:20px;}
@@ -94,14 +40,12 @@
 </style>
 </head>
 <body>
+<div class="layout">
+  <aside class="sidebar" id="sidebar"></aside>
   <div class="wrap" id="app" style="display:none;">
     <header>
-      <div>
-        <div class="flags"><span></span><span></span><span></span></div>
-        <h1>Minducas</h1>
-        <div class="subtitle" id="welcomeMsg">carregando...</div>
-      </div>
-      <nav class="topnav" id="topNav"></nav>
+      <h1 class="pageTitle">Meu Painel</h1>
+      <div class="subtitle" id="welcomeMsg">carregando...</div>
     </header>
 
     <section id="charSection">
@@ -114,6 +58,7 @@
       <div id="freqContent" class="stats"></div>
     </section>
   </div>
+</div>
 
   <div class="gate" id="gate">
     <p id="gateMsg">Verificando acesso...</p>
