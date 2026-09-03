@@ -138,12 +138,40 @@
             <button class="btnMini take" data-act="take" data-id="${it.item_id}">Pegou</button>
             <button class="btnMini decline" data-act="decline" data-id="${it.item_id}">Desistiu</button>
           ` : ''}
+          ${it.status === 'confirmed' ? `<button class="btnMini decline" data-act="revert" data-id="${it.item_id}">Outro pegou no lugar</button>` : ''}
         </td>
       </tr>`).join('');
 
-    document.querySelectorAll('[data-act]').forEach(btn => {
-      btn.addEventListener('click', () => handleConfirm(btn.dataset.id, btn.dataset.act === 'take'));
+    document.querySelectorAll('#itemsBody [data-act]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        if(btn.dataset.act === 'revert') handleRevert(btn.dataset.id);
+        else handleConfirm(btn.dataset.id, btn.dataset.act === 'take');
+      });
     });
+  }
+
+  async function handleRevert(itemId){
+    if(!confirm('Confirma que outra pessoa pegou o fragmento no lugar dele? Isso remove do histórico e manda ele de volta pro início da fila.')) return;
+
+    const status = document.getElementById('generateStatus');
+    const { data, error } = await client.rpc('revert_fragment_item', { p_item_id: itemId });
+
+    if(error){
+      status.className = 'status err';
+      status.textContent = 'Erro: ' + error.message;
+      return;
+    }
+
+    const nick = data?.[0]?.nick || 'Jogador';
+    status.className = 'status ok';
+    status.textContent = `${nick} removido do histórico e voltou pro início da fila.`;
+
+    const idx = currentItems.findIndex(it => it.item_id === itemId);
+    if(idx >= 0) currentItems.splice(idx, 1);
+
+    renderItems();
+    loadQueue();
+    loadHistory();
   }
 
   async function handleConfirm(itemId, confirmed){
@@ -261,6 +289,25 @@
       </tr>`).join('');
   }
 
+  function renderHistoryTable(items){
+    return `<div class="table-scroll" style="margin:0 16px 16px;">
+      <table>
+        <thead><tr><th>#</th><th>Nick</th><th>Pág.</th><th>Frag.</th><th>Status</th><th></th></tr></thead>
+        <tbody>
+          ${items.map(it => `
+            <tr>
+              <td>${it.position_in_list}</td>
+              <td class="nickText">${it.nick}</td>
+              <td class="num">${it.page_number}</td>
+              <td class="num">${it.frag_number}</td>
+              <td><span class="itemStatus ${it.status}">${it.status === 'pending' ? 'Pendente' : it.status === 'confirmed' ? 'Confirmado' : 'Desistiu'}</span></td>
+              <td>${it.status === 'confirmed' ? `<button class="btnMini decline" data-act="revert" data-id="${it.id}">Outro pegou no lugar</button>` : ''}</td>
+            </tr>`).join('')}
+        </tbody>
+      </table>
+    </div>`;
+  }
+
   async function loadHistory(){
     const { data: dists } = await client
       .from('fragment_distributions')
@@ -282,9 +329,13 @@
           <span>GvG ${dt}</span>
           <span class="h-meta">${d.total_fragments} fragmento(s) distribuído(s)</span>
         </summary>
-        <div class="resultBox" style="margin:0 16px 16px;">${formatList(items)}</div>
+        ${renderHistoryTable(items)}
       </details>`;
     }).join('');
+
+    document.querySelectorAll('#historyList [data-act=revert]').forEach(btn => {
+      btn.addEventListener('click', () => handleRevert(btn.dataset.id));
+    });
   }
 
   (async ()=>{
