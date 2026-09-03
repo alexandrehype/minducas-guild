@@ -71,39 +71,42 @@ function trendIcon(tendencia){
   return tendencia === 'novo' ? '—' : tendencia;
 }
 
-// desenha um gráfico de barras simples (SVG) com até 5 pontos, sempre preenchendo 5 posições
+// desenha um gráfico de linha simples (SVG) com até 5 pontos, sempre preenchendo 5 posições
 // entries: array cronológico (mais antigo -> mais recente) de {label, pontos, abates, assistencias, mortes}
 function renderScoreChart(containerEl, entries, metric){
-  const METRIC_LABELS = { pontos:'Pontos', abates:'Abates', assistencias:'Assistências', mortes:'Mortes' };
   const slots = 5;
   const padded = Array(Math.max(0, slots - entries.length)).fill(null).concat(entries).slice(-slots);
-
   const values = padded.map(e => e ? Number(e[metric]) || 0 : 0);
   const maxVal = Math.max(1, ...values);
 
-  const width = 560, height = 190, padding = 8, bottomPad = 34, topPad = 26;
-  const gap = 16;
-  const barW = (width - padding * 2 - gap * (slots - 1)) / slots;
-  const chartH = height - bottomPad - topPad;
+  const width = 560, height = 190, padX = 34, topPad = 30, bottomPad = 34;
+  const chartH = height - topPad - bottomPad;
+  const stepX = (width - padX * 2) / (slots - 1);
 
-  let bars = '';
-  padded.forEach((e, i) => {
+  const points = padded.map((e, i) => {
     const val = values[i];
-    const h = maxVal > 0 ? (val / maxVal) * chartH : 0;
-    const x = padding + i * (barW + gap);
-    const y = topPad + (chartH - h);
-    const label = e ? e.label : '—';
-    const filled = !!e;
-    bars += `
-      <rect x="${x}" y="${y}" width="${barW}" height="${Math.max(h,2)}" rx="3"
-        fill="${filled ? 'var(--gold)' : 'var(--line)'}" opacity="${filled ? '0.9' : '0.5'}"></rect>
-      <text x="${x + barW/2}" y="${y - 8}" text-anchor="middle" font-size="13" font-weight="700"
-        font-family="'JetBrains Mono',ui-monospace,monospace" fill="${filled ? 'var(--gold)' : 'var(--muted)'}">${val}</text>
-      <text x="${x + barW/2}" y="${height - 12}" text-anchor="middle" font-size="10"
-        font-family="'JetBrains Mono',ui-monospace,monospace" fill="var(--muted)">${label}</text>`;
+    const x = padX + i * stepX;
+    const y = topPad + (chartH - (maxVal > 0 ? (val / maxVal) * chartH : 0));
+    return { x, y, val, label: e ? e.label : '—', filled: !!e };
   });
 
-  containerEl.innerHTML = `<svg viewBox="0 0 ${width} ${height}" style="width:100%; height:auto; display:block;">${bars}</svg>`;
+  const pathD = points.map((p, i) => `${i === 0 ? 'M' : 'L'} ${p.x.toFixed(1)} ${p.y.toFixed(1)}`).join(' ');
+
+  let dots = '', labels = '';
+  points.forEach(p => {
+    dots += `<circle cx="${p.x}" cy="${p.y}" r="5" fill="${p.filled ? 'var(--gold)' : 'var(--line)'}"></circle>`;
+    labels += `
+      <text x="${p.x}" y="${p.y - 14}" text-anchor="middle" font-size="13" font-weight="700"
+        font-family="'JetBrains Mono',ui-monospace,monospace" fill="${p.filled ? 'var(--gold)' : 'var(--muted)'}">${p.val}</text>
+      <text x="${p.x}" y="${height - 12}" text-anchor="middle" font-size="10"
+        font-family="'JetBrains Mono',ui-monospace,monospace" fill="var(--muted)">${p.label}</text>`;
+  });
+
+  containerEl.innerHTML = `<svg viewBox="0 0 ${width} ${height}" style="width:100%; height:auto; display:block;">
+    <path d="${pathD}" fill="none" stroke="var(--gold)" stroke-width="2.5" opacity="0.9"></path>
+    ${dots}
+    ${labels}
+  </svg>`;
 
   const noteEl = containerEl.parentElement?.querySelector('.chartEmptyNote');
   if(noteEl) noteEl.style.display = entries.length === 0 ? 'block' : 'none';
