@@ -4,13 +4,7 @@
 function renderTopNav(supabaseClient, profile, currentPage){
   const topbarEl = document.getElementById('topbar');
   if(topbarEl){
-    topbarEl.innerHTML = `
-      <img class="bannerArt" src="icones/banner.png" alt="" onerror="this.style.display='none'">
-      <div class="brandText">
-        <div class="flags"><span></span><span></span><span></span></div>
-        <h1>Minducas</h1>
-        <div class="subtitle">guilda ragnarok origin</div>
-      </div>`;
+    topbarEl.innerHTML = `<img class="bannerArt" src="icones/banner.png" alt="Minducas" onerror="this.style.display='none'">`;
   }
 
   const sidebarEl = document.getElementById('sidebar');
