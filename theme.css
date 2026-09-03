@@ -136,7 +136,7 @@ tr:hover td{background:#221f28;}
 .fmt-none{background:transparent; color:var(--muted);}
 
 /* ---------- Ícones ---------- */
-.classIconImg{width:32px; height:32px; object-fit:contain; vertical-align:middle;}
+.classIconImg{width:32px; height:32px; object-fit:contain; vertical-align:middle; margin-right:10px;}
 .statIcon{width:22px; height:22px; object-fit:contain; opacity:.85; display:block; margin:0 auto 6px;}
 
 /* ---------- Status / mensagens ---------- */
