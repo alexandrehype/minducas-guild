@@ -23,6 +23,17 @@
     max-height:360px; overflow-y:auto; margin-bottom:12px;
   }
   .resultBox .missing{color:var(--muted); font-style:italic;}
+  .itemStatus{font-family:'JetBrains Mono',ui-monospace,monospace; font-weight:600; font-size:10px; padding:2px 8px; border-radius:3px; text-transform:uppercase;}
+  .itemStatus.pending{background:rgba(212,169,74,.15); color:var(--gold);}
+  .itemStatus.confirmed{background:rgba(106,153,85,.15); color:var(--green);}
+  .itemStatus.declined{background:rgba(179,69,63,.15); color:var(--red);}
+  .btnMini{font-family:'JetBrains Mono',ui-monospace,monospace; font-weight:600; font-size:10px; letter-spacing:0.5px; text-transform:uppercase;
+    padding:5px 10px; border-radius:3px; cursor:pointer; margin-right:6px; border:1px solid var(--line); background:transparent; color:var(--muted);}
+  .btnMini.take{border-color:var(--green); color:var(--green);}
+  .btnMini.take:hover{background:var(--green); color:#0d1a0a;}
+  .btnMini.decline{border-color:var(--red); color:var(--red);}
+  .btnMini.decline:hover{background:var(--red); color:#fff;}
+  .btnMini:disabled{opacity:.4; cursor:not-allowed;}
 
   .queueTable td, .queueTable th{white-space:nowrap;}
   .eligBadge{font-family:'JetBrains Mono',ui-monospace,monospace; font-weight:600; font-size:10px; padding:2px 7px; border-radius:3px; text-transform:uppercase;}
@@ -65,9 +76,15 @@
         </div>
       </div>
       <div class="status" id="generateStatus"></div>
+
       <div id="resultWrap" style="display:none;">
-        <div class="resultBox" id="resultBox"></div>
-        <button class="btn secondary" id="btnCopy">Copiar lista</button>
+        <div class="table-scroll">
+          <table>
+            <thead><tr><th>#</th><th>Nick</th><th>Pág.</th><th>Frag.</th><th>Status</th><th></th></tr></thead>
+            <tbody id="itemsBody"></tbody>
+          </table>
+        </div>
+        <button class="btn secondary" id="btnCopy" style="margin-top:12px;">Copiar lista (confirmados)</button>
       </div>
     </section>
 
@@ -103,7 +120,65 @@
   document.getElementById('inputDate').value = new Date().toISOString().slice(0,10);
 
   function formatList(items){
-    return items.map(it => `${it.position_in_list} | ${it.nick} | pág. ${it.page_number} | frag. ${it.frag_number}`).join(' | ');
+    return items.map(it => `${it.position_in_list} | ${it.nick} | pág. ${it.page_number} | frag. ${it.frag_number}${it.status && it.status !== 'confirmed' ? ` (${it.status === 'declined' ? 'desistiu' : 'pendente'})` : ''}`).join(' | ');
+  }
+
+  let currentItems = []; // estado local dos itens da distribuição atual
+
+  function renderItems(){
+    document.getElementById('itemsBody').innerHTML = currentItems.map(it => `
+      <tr data-item="${it.item_id}">
+        <td>${it.position_in_list}</td>
+        <td class="nickText">${it.nick}</td>
+        <td class="num">${it.page_number}</td>
+        <td class="num">${it.frag_number}</td>
+        <td><span class="itemStatus ${it.status}">${it.status === 'pending' ? 'Pendente' : it.status === 'confirmed' ? 'Confirmado' : 'Desistiu'}</span></td>
+        <td>
+          ${it.status === 'pending' ? `
+            <button class="btnMini take" data-act="take" data-id="${it.item_id}">Pegou</button>
+            <button class="btnMini decline" data-act="decline" data-id="${it.item_id}">Desistiu</button>
+          ` : ''}
+        </td>
+      </tr>`).join('');
+
+    document.querySelectorAll('[data-act]').forEach(btn => {
+      btn.addEventListener('click', () => handleConfirm(btn.dataset.id, btn.dataset.act === 'take'));
+    });
+  }
+
+  async function handleConfirm(itemId, confirmed){
+    const status = document.getElementById('generateStatus');
+    const { data, error } = await client.rpc('confirm_fragment_item', { p_item_id: itemId, p_confirmed: confirmed });
+
+    if(error){
+      status.className = 'status err';
+      status.textContent = 'Erro: ' + error.message;
+      return;
+    }
+
+    const result = data[0];
+    // atualiza o item confirmado/desistido localmente
+    const idx = currentItems.findIndex(it => it.item_id === itemId);
+    if(idx >= 0) currentItems[idx].status = result.status;
+
+    if(result.action === 'replaced'){
+      currentItems.push({
+        item_id: result.new_item_id, position_in_list: result.position_in_list,
+        nick: result.new_nick, page_number: result.page_number, frag_number: result.frag_number,
+        status: 'pending',
+      });
+      status.className = 'status ok';
+      status.textContent = `${result.new_nick} entrou no lugar de quem desistiu (pág. ${result.page_number}, frag. ${result.frag_number}).`;
+    } else if(result.action === 'declined_no_replacement'){
+      status.className = 'status err';
+      status.textContent = `Ninguém elegível sobrou na fila pra substituir a posição ${result.position_in_list}.`;
+    } else {
+      status.className = 'status ok';
+      status.textContent = '';
+    }
+
+    renderItems();
+    loadQueue();
   }
 
   document.getElementById('btnGenerate').addEventListener('click', async ()=>{
@@ -138,29 +213,26 @@
       return;
     }
 
-    if(data.length < count){
-      status.className = 'status err';
-      status.textContent = `Atenção: só havia ${data.length} jogador(es) elegível(is) na fila (pediu ${count}).`;
-    } else {
-      status.className = 'status ok';
-      status.textContent = `Lista gerada com ${data.length} jogador(es).`;
-    }
+    status.className = data.length < count ? 'status err' : 'status ok';
+    status.textContent = data.length < count
+      ? `Atenção: só havia ${data.length} jogador(es) elegível(is) na fila (pediu ${count}).`
+      : `Lista gerada com ${data.length} jogador(es). Confirme ou registre desistência de cada um.`;
 
+    currentItems = data;
     document.getElementById('resultWrap').style.display = 'block';
-    document.getElementById('resultBox').textContent = formatList(data);
-
-    loadQueue();
+    renderItems();
     loadHistory();
   });
 
   document.getElementById('btnCopy').addEventListener('click', async ()=>{
-    const text = document.getElementById('resultBox').textContent;
+    const confirmed = currentItems.filter(it => it.status === 'confirmed');
+    const text = confirmed.map(it => `${it.position_in_list} | ${it.nick} | pág. ${it.page_number} | frag. ${it.frag_number}`).join(' | ');
     try{
       await navigator.clipboard.writeText(text);
-      const btn = document.getElementById('btnCopy');
-      const original = btn.textContent;
-      btn.textContent = 'Copiado!';
-      setTimeout(()=>{ btn.textContent = original; }, 1500);
+      const btnEl = document.getElementById('btnCopy');
+      const original = btnEl.textContent;
+      btnEl.textContent = 'Copiado!';
+      setTimeout(()=>{ btnEl.textContent = original; }, 1500);
     }catch(e){
       alert('Não consegui copiar automaticamente. Selecione o texto manualmente.');
     }
