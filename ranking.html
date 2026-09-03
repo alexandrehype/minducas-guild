@@ -7,7 +7,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=EB+Garamond:ital,wght@0,400;0,500;0,600;1,400&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="theme.css?v=9">
+<link rel="stylesheet" href="theme.css?v=10">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 <script src="nav.js?v=4"></script>
 <script src="helpers.js?v=8"></script>
@@ -97,7 +97,7 @@
         ? top3.map((r,i) => `
             <div class="topPlayer">
               <img class="medalImg" src="${MEDALS[i]}" alt="" onerror="this.style.display='none'">
-              ${classIcon(r.classe, 22)}
+              ${classIcon(r.classe, 28)}
               ${r.player_id ? `<a href="perfil.html?id=${r.player_id}" class="nick" style="color:var(--text); text-decoration:none;">${r.nick}</a>` : `<span class="nick">${r.nick}</span>`}
               <span class="media">${r.media ?? 0}</span>
             </div>`).join('')
@@ -115,7 +115,7 @@
       <tr style="${pos ? '' : 'opacity:.5;'}">
         <td class="rankPos">${pos || '—'}</td>
         <td>${r.player_id ? `<a href="perfil.html?id=${r.player_id}" class="nickText" style="color:var(--text); text-decoration:none; border-bottom:1px dotted var(--muted);">${r.nick}</a>` : `<span class="nickText">${r.nick}</span>`}${r.staff ? '<span class="staffBadge">Staff</span>' : ''}</td>
-        <td>${classIcon(r.classe, 24)}</td>
+        <td>${classIcon(r.classe, 30)}</td>
         <td>${groupTag(r.grupo)}</td>
         <td class="num">${r.ocupacao_s ?? 0}</td>
         <td class="num">${r.ocupacao_a ?? 0}</td>

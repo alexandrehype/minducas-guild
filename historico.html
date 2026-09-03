@@ -7,7 +7,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=EB+Garamond:ital,wght@0,400;0,500;0,600;1,400&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="theme.css?v=9">
+<link rel="stylesheet" href="theme.css?v=10">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 <script src="nav.js?v=6"></script>
 <script src="helpers.js?v=8"></script>
@@ -96,7 +96,7 @@
     return players.map(p => `
       <tr>
         <td>${p.player_id ? `<a href="perfil.html?id=${p.player_id}" class="nickText" style="color:var(--text); text-decoration:none; border-bottom:1px dotted var(--muted);">${p.nick}</a>` : `<span class="nickText">${p.nick}</span>`}${p.staff ? '<span class="staffBadge">Staff</span>' : ''}</td>
-        <td>${classIcon(p.classe, 22)}</td>
+        <td>${classIcon(p.classe, 28)}</td>
         <td>${formatTag(p.formato)}</td>
         <td class="num">${p.marcas ?? 0}</td>
         <td class="num">${p.ocupacao_s ?? 0}</td>
