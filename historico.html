@@ -123,17 +123,18 @@
     </table></div>`;
   }
 
+  function resultBadgeHtml(ev){
+    if(ev.our_score == null || ev.opponent_score == null) return '';
+    if(ev.our_score < ev.opponent_score) return '<span class="resultBadge win">Vitória</span>';
+    if(ev.our_score > ev.opponent_score) return '<span class="resultBadge loss">Derrota</span>';
+    return '<span class="resultBadge draw">Empate</span>';
+  }
+
   function scoreLineHtml(ev){
     if(ev.opponent_guild || ev.our_score != null || ev.opponent_score != null){
       const ourScore = ev.our_score ?? '—';
       const oppScore = ev.opponent_score ?? '—';
-      let badge = '';
-      if(ev.our_score != null && ev.opponent_score != null){
-        if(ev.our_score < ev.opponent_score) badge = '<span class="resultBadge win">Vitória</span>';
-        else if(ev.our_score > ev.opponent_score) badge = '<span class="resultBadge loss">Derrota</span>';
-        else badge = '<span class="resultBadge draw">Empate</span>';
-      }
-      return `<span class="vs">Minducas ${ourScore} x ${oppScore} ${ev.opponent_guild || '?'}</span>${badge}`;
+      return `<span class="vs">Minducas ${ourScore} x ${oppScore} ${ev.opponent_guild || '?'}</span>`;
     }
     return `<span class="noScore">placar não registrado</span>`;
   }
@@ -239,7 +240,7 @@
 
       return `<details class="history-item">
         <summary>
-          <span>${ev.label}</span>
+          <span>${ev.label} ${resultBadgeHtml(ev)}</span>
           <span class="h-meta">${dt} · ${evPlayers.length} jogador(es) · <span class="history-total">${Math.round(total)} pts</span></span>
         </summary>
         <div class="history-body">
