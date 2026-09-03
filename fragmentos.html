@@ -85,6 +85,7 @@
           </table>
         </div>
         <button class="btn secondary" id="btnCopy" style="margin-top:12px;">Copiar lista (confirmados)</button>
+        <button class="btn secondary" id="btnCancelDist" style="margin-top:12px; border-color:var(--red); color:var(--red);">Cancelar essa distribuição</button>
       </div>
     </section>
 
@@ -125,6 +126,7 @@
 
   let viewerIsStaff = false;
   let currentItems = []; // estado local dos itens da distribuição atual
+  let currentDistributionId = null;
 
   function renderItems(){
     document.getElementById('itemsBody').innerHTML = currentItems.map(it => `
@@ -248,6 +250,7 @@
       : `Lista gerada com ${data.length} jogador(es). Confirme ou registre desistência de cada um.`;
 
     currentItems = data;
+    currentDistributionId = data[0]?.distribution_id || null;
     document.getElementById('resultWrap').style.display = 'block';
     renderItems();
     loadHistory();
@@ -265,6 +268,29 @@
     }catch(e){
       alert('Não consegui copiar automaticamente. Selecione o texto manualmente.');
     }
+  });
+
+  document.getElementById('btnCancelDist').addEventListener('click', async ()=>{
+    if(!currentDistributionId) return;
+    if(!confirm('Cancelar essa distribuição inteira? Isso desfaz qualquer confirmação/desistência já feita e devolve todo mundo pro início da fila. Não dá pra desfazer.')) return;
+
+    const status = document.getElementById('generateStatus');
+    const { error } = await client.rpc('cancel_fragment_distribution', { p_distribution_id: currentDistributionId });
+
+    if(error){
+      status.className = 'status err';
+      status.textContent = 'Erro ao cancelar: ' + error.message;
+      return;
+    }
+
+    status.className = 'status ok';
+    status.textContent = 'Distribuição cancelada e fila restaurada.';
+    currentItems = [];
+    currentDistributionId = null;
+    document.getElementById('resultWrap').style.display = 'none';
+
+    loadQueue();
+    loadHistory();
   });
 
   async function loadQueue(){
