@@ -17,6 +17,7 @@ function renderTopNav(supabaseClient, profile, currentPage){
     { href:'ranking.html', label:'Ranking Geral', page:'ranking', show:true },
     { href:'historico.html', label:'Histórico GvGs', page:'historico', show:true },
     { href:'staff.html', label:'Painel da Staff', page:'staff', show: !!profile.staff },
+    { href:'fragmentos.html', label:'Fragmentos', page:'fragmentos', show: !!profile.staff },
   ];
 
   sidebarEl.innerHTML = `

@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Minducas — Fragmentos</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=EB+Garamond:ital,wght@0,400;0,500;0,600;1,400&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="theme.css?v=18">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<script src="nav.js?v=11"></script>
+<script src="helpers.js?v=8"></script>
+<style>
+  .field{margin-bottom:16px; max-width:260px;}
+  .field label{display:block; font-size:11px; font-family:'JetBrains Mono',ui-monospace,monospace; color:var(--muted); margin-bottom:6px;}
+  .field input{width:100%; background:#161318; border:1px solid var(--line); color:var(--text); padding:10px 11px; border-radius:3px; font-size:14px; font-family:Georgia,serif;}
+  .formRow{display:flex; gap:16px; flex-wrap:wrap; align-items:flex-end;}
+
+  .resultBox{
+    background:var(--panel-2); border:1px solid var(--gold-dim); border-radius:4px; padding:16px;
+    font-family:'JetBrains Mono',ui-monospace,monospace; font-size:13px; white-space:pre-wrap; line-height:1.7;
+    max-height:360px; overflow-y:auto; margin-bottom:12px;
+  }
+  .resultBox .missing{color:var(--muted); font-style:italic;}
+
+  .queueTable td, .queueTable th{white-space:nowrap;}
+  .eligBadge{font-family:'JetBrains Mono',ui-monospace,monospace; font-weight:600; font-size:10px; padding:2px 7px; border-radius:3px; text-transform:uppercase;}
+  .eligBadge.ok{background:rgba(106,153,85,.15); color:var(--green);}
+  .eligBadge.no{background:rgba(179,69,63,.15); color:var(--red);}
+
+  .history-item{border:1px solid var(--line); border-radius:4px; margin-bottom:10px; background:var(--panel); overflow:hidden;}
+  .history-item summary{
+    display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap;
+    padding:12px 16px; margin:0; cursor:pointer; list-style:none;
+    font-family:'JetBrains Mono',ui-monospace,monospace; font-size:13px; color:var(--text);
+  }
+  .history-item summary::-webkit-details-marker{display:none;}
+  .history-item .h-meta{color:var(--muted); font-size:11.5px;}
+</style>
+</head>
+<body>
+<div class="topbar" id="topbar"></div>
+<div class="layout">
+  <aside class="sidebar" id="sidebar"></aside>
+  <div class="wrap" id="app" style="display:none;">
+    <header>
+      <h1 class="pageTitle">Fragmentos</h1>
+      <div class="subtitle">controle da fila de distribuição pós-GvG</div>
+    </header>
+
+    <section>
+      <h2>Gerar lista dessa GvG</h2>
+      <div class="formRow">
+        <div class="field">
+          <label>Data da GvG</label>
+          <input type="date" id="inputDate">
+        </div>
+        <div class="field">
+          <label>Fragmentos recebidos</label>
+          <input type="number" id="inputCount" min="1" placeholder="ex: 20">
+        </div>
+        <div class="field" style="margin-bottom:16px;">
+          <button class="btn primary" id="btnGenerate">Gerar lista</button>
+        </div>
+      </div>
+      <div class="status" id="generateStatus"></div>
+      <div id="resultWrap" style="display:none;">
+        <div class="resultBox" id="resultBox"></div>
+        <button class="btn secondary" id="btnCopy">Copiar lista</button>
+      </div>
+    </section>
+
+    <section>
+      <h2>Fila atual</h2>
+      <div class="subtitle" style="margin-bottom:12px;">Ordem de quem é o próximo a receber. Removidos e contas com menos de 96h ficam marcados como não elegíveis, mas continuam na fila.</div>
+      <div class="table-scroll">
+        <table class="queueTable">
+          <thead><tr><th>#</th><th>Nick</th><th>Elegível agora</th></tr></thead>
+          <tbody id="queueBody"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <section>
+      <h2>Histórico de distribuições</h2>
+      <div id="historyList"></div>
+      <div class="empty" id="historyEmpty">Nenhuma distribuição registrada ainda.</div>
+    </section>
+  </div>
+</div>
+
+  <div class="gate" id="gate">
+    <p id="gateMsg">Verificando acesso...</p>
+  </div>
+
+<script>
+  const client = supabase.createClient('https://fqbgvqficprufgpuyjsh.supabase.co', 'sb_publishable_W37jIu813NWTVcokSJnd2g_JbperpeB');
+  const app = document.getElementById('app');
+  const gate = document.getElementById('gate');
+  const gateMsg = document.getElementById('gateMsg');
+
+  document.getElementById('inputDate').value = new Date().toISOString().slice(0,10);
+
+  function formatList(items){
+    return items.map(it => `${it.position_in_list} | ${it.nick} | pág. ${it.page_number} | frag. ${it.frag_number}`).join(' | ');
+  }
+
+  document.getElementById('btnGenerate').addEventListener('click', async ()=>{
+    const btn = document.getElementById('btnGenerate');
+    const status = document.getElementById('generateStatus');
+    const date = document.getElementById('inputDate').value;
+    const count = Number(document.getElementById('inputCount').value);
+
+    if(!date || !count || count < 1){
+      status.className = 'status err';
+      status.textContent = 'Preencha a data e a quantidade de fragmentos.';
+      return;
+    }
+
+    btn.disabled = true;
+    status.className = 'status';
+    status.textContent = 'Gerando lista...';
+
+    const { data, error } = await client.rpc('pull_fragment_batch', { p_count: count, p_event_date: date });
+
+    btn.disabled = false;
+
+    if(error){
+      status.className = 'status err';
+      status.textContent = 'Erro: ' + error.message;
+      return;
+    }
+
+    if(!data || !data.length){
+      status.className = 'status err';
+      status.textContent = 'Nenhum jogador elegível encontrado na fila.';
+      return;
+    }
+
+    if(data.length < count){
+      status.className = 'status err';
+      status.textContent = `Atenção: só havia ${data.length} jogador(es) elegível(is) na fila (pediu ${count}).`;
+    } else {
+      status.className = 'status ok';
+      status.textContent = `Lista gerada com ${data.length} jogador(es).`;
+    }
+
+    document.getElementById('resultWrap').style.display = 'block';
+    document.getElementById('resultBox').textContent = formatList(data);
+
+    loadQueue();
+    loadHistory();
+  });
+
+  document.getElementById('btnCopy').addEventListener('click', async ()=>{
+    const text = document.getElementById('resultBox').textContent;
+    try{
+      await navigator.clipboard.writeText(text);
+      const btn = document.getElementById('btnCopy');
+      const original = btn.textContent;
+      btn.textContent = 'Copiado!';
+      setTimeout(()=>{ btn.textContent = original; }, 1500);
+    }catch(e){
+      alert('Não consegui copiar automaticamente. Selecione o texto manualmente.');
+    }
+  });
+
+  async function loadQueue(){
+    const { data: queue } = await client
+      .from('fragment_queue')
+      .select('nick, player_id, queue_position')
+      .order('queue_position', { ascending: true });
+
+    if(!queue || !queue.length){
+      document.getElementById('queueBody').innerHTML = '';
+      return;
+    }
+
+    const eligChecks = await Promise.all(queue.map(q =>
+      client.rpc('is_fragment_eligible', { p_nick: q.nick, p_player_id: q.player_id })
+    ));
+
+    document.getElementById('queueBody').innerHTML = queue.map((q, i) => `
+      <tr>
+        <td>${i+1}</td>
+        <td class="nickText">${q.nick}</td>
+        <td>${eligChecks[i].data ? '<span class="eligBadge ok">Elegível</span>' : '<span class="eligBadge no">Não elegível</span>'}</td>
+      </tr>`).join('');
+  }
+
+  async function loadHistory(){
+    const { data: dists } = await client
+      .from('fragment_distributions')
+      .select('id, event_date, total_fragments, created_at')
+      .order('event_date', { ascending: false });
+
+    document.getElementById('historyEmpty').style.display = (dists && dists.length) ? 'none' : 'block';
+    if(!dists || !dists.length) return;
+
+    const { data: allItems } = await client
+      .from('fragment_distribution_items')
+      .select('*');
+
+    document.getElementById('historyList').innerHTML = dists.map(d => {
+      const items = (allItems || []).filter(it => it.distribution_id === d.id).sort((a,b)=>a.position_in_list-b.position_in_list);
+      const dt = new Date(d.event_date + 'T00:00:00').toLocaleDateString('pt-BR');
+      return `<details class="history-item">
+        <summary>
+          <span>GvG ${dt}</span>
+          <span class="h-meta">${d.total_fragments} fragmento(s) distribuído(s)</span>
+        </summary>
+        <div class="resultBox" style="margin:0 16px 16px;">${formatList(items)}</div>
+      </details>`;
+    }).join('');
+  }
+
+  (async ()=>{
+    const { data: { session } } = await client.auth.getSession();
+    if(!session){
+      gateMsg.textContent = 'Você precisa entrar pra acessar essa página.';
+      setTimeout(()=>{ window.location.href = 'index.html'; }, 1200);
+      return;
+    }
+
+    const { data: profile, error } = await client
+      .from('profiles')
+      .select('approved, staff, removed')
+      .eq('id', session.user.id)
+      .single();
+
+    if(error || !profile || !profile.staff){
+      gateMsg.textContent = 'Esta página é restrita à staff da guilda.';
+      return;
+    }
+
+    renderTopNav(client, profile, 'fragmentos');
+    gate.style.display = 'none';
+    app.style.display = 'block';
+    loadQueue();
+    loadHistory();
+  })();
+</script>
+</body>
+</html>
