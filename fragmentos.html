@@ -9,7 +9,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=EB+Garamond:ital,wght@0,400;0,500;0,600;1,400&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="theme.css?v=18">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
-<script src="nav.js?v=11"></script>
+<script src="nav.js?v=12"></script>
 <script src="helpers.js?v=8"></script>
 <style>
   .field{margin-bottom:16px; max-width:260px;}
@@ -60,7 +60,7 @@
       <div class="subtitle">controle da fila de distribuição pós-GvG</div>
     </header>
 
-    <section>
+    <section id="generateSection">
       <h2>Gerar lista dessa GvG</h2>
       <div class="formRow">
         <div class="field">
@@ -123,6 +123,7 @@
     return items.map(it => `${it.position_in_list} | ${it.nick} | pág. ${it.page_number} | frag. ${it.frag_number}${it.status && it.status !== 'confirmed' ? ` (${it.status === 'declined' ? 'desistiu' : 'pendente'})` : ''}`).join(' | ');
   }
 
+  let viewerIsStaff = false;
   let currentItems = []; // estado local dos itens da distribuição atual
 
   function renderItems(){
@@ -134,11 +135,11 @@
         <td class="num">${it.frag_number}</td>
         <td><span class="itemStatus ${it.status}">${it.status === 'pending' ? 'Pendente' : it.status === 'confirmed' ? 'Confirmado' : 'Desistiu'}</span></td>
         <td>
-          ${it.status === 'pending' ? `
+          ${viewerIsStaff && it.status === 'pending' ? `
             <button class="btnMini take" data-act="take" data-id="${it.item_id}">Pegou</button>
             <button class="btnMini decline" data-act="decline" data-id="${it.item_id}">Desistiu</button>
           ` : ''}
-          ${it.status === 'confirmed' ? `<button class="btnMini decline" data-act="revert" data-id="${it.item_id}">Outro pegou no lugar</button>` : ''}
+          ${viewerIsStaff && it.status === 'confirmed' ? `<button class="btnMini decline" data-act="revert" data-id="${it.item_id}">Outro pegou no lugar</button>` : ''}
         </td>
       </tr>`).join('');
 
@@ -291,7 +292,7 @@
               <td class="num">${it.page_number}</td>
               <td class="num">${it.frag_number}</td>
               <td><span class="itemStatus ${it.status}">${it.status === 'pending' ? 'Pendente' : it.status === 'confirmed' ? 'Confirmado' : 'Desistiu'}</span></td>
-              <td>${it.status === 'confirmed' ? `<button class="btnMini decline" data-act="revert" data-id="${it.id}">Outro pegou no lugar</button>` : ''}</td>
+              <td>${viewerIsStaff && it.status === 'confirmed' ? `<button class="btnMini decline" data-act="revert" data-id="${it.id}">Outro pegou no lugar</button>` : ''}</td>
             </tr>`).join('')}
         </tbody>
       </table>
@@ -342,10 +343,19 @@
       .eq('id', session.user.id)
       .single();
 
-    if(error || !profile || !profile.staff){
-      gateMsg.textContent = 'Esta página é restrita à staff da guilda.';
+    if(error || !profile || profile.removed){
+      gateMsg.textContent = 'Sua conta não tem acesso a essa página.';
+      await client.auth.signOut();
       return;
     }
+    if(!profile.approved){
+      gateMsg.textContent = 'Seu cadastro ainda está aguardando aprovação da staff.';
+      await client.auth.signOut();
+      return;
+    }
+
+    viewerIsStaff = !!profile.staff;
+    document.getElementById('generateSection').style.display = viewerIsStaff ? 'block' : 'none';
 
     renderTopNav(client, profile, 'fragmentos');
     gate.style.display = 'none';
