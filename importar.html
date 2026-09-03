@@ -20,6 +20,10 @@
   .dropzone:hover{border-color:var(--gold); color:var(--text);}
   .dropzone input{display:none;}
   .dropzone .hint{font-size:11px; font-family:'JetBrains Mono',ui-monospace,monospace;}
+  .dropzone.filled{border-style:solid; border-color:var(--gold);}
+
+  .uploadGrid{display:grid; grid-template-columns:1fr 1fr; gap:16px;}
+  @media (max-width:700px){ .uploadGrid{grid-template-columns:1fr;} }
 
   .sessionInfo{display:flex; gap:24px; flex-wrap:wrap; margin-bottom:14px; font-family:'JetBrains Mono',ui-monospace,monospace; font-size:12.5px;}
   .sessionInfo .item .l{color:var(--muted); font-size:10px; text-transform:uppercase; letter-spacing:0.5px; display:block; margin-bottom:3px;}
@@ -28,6 +32,14 @@
   .badge.linked{background:rgba(106,153,85,.15); color:var(--green);}
   .badge.unlinked{background:rgba(212,169,74,.15); color:var(--gold);}
 
+  .field{margin-bottom:16px; max-width:340px;}
+  .field label{display:block; font-size:11px; font-family:'JetBrains Mono',ui-monospace,monospace; color:var(--muted); margin-bottom:6px;}
+  .field input{width:100%; background:#161318; border:1px solid var(--line); color:var(--text); padding:10px 11px; border-radius:3px; font-size:14px; font-family:Georgia,serif;}
+  .scoreRow{display:flex; align-items:center; gap:10px;}
+  .scoreRow input{text-align:center;}
+  .scoreRow .x{color:var(--muted); font-family:'JetBrains Mono',ui-monospace,monospace;}
+
+  .arenaBlockTitle{font-family:'JetBrains Mono',ui-monospace,monospace; font-weight:600; font-size:12px; letter-spacing:1px; text-transform:uppercase; color:var(--gold); margin:18px 0 10px;}
   table{min-width:900px;}
 </style>
 </head>
@@ -42,37 +54,80 @@
     </header>
 
     <section>
-      <h2>1. Enviar CSV da sessão</h2>
+      <h2>1. Enviar CSVs da GvG</h2>
       <div class="subtitle" style="margin-bottom:12px;">
-        Use o botão "⬇ Exportar CSV desta sessão" dentro do Histórico da ferramenta local — ele já embute nome, data, arena e formato de cada jogador.
+        Exporte o CSV de cada arena na ferramenta local ("⬇ Exportar CSV desta sessão") e envie os dois abaixo. Pode enviar só um, se a outra arena não tiver dados pra registrar.
       </div>
-      <label class="dropzone" id="dropzone">
-        <input type="file" id="fileInput" accept=".csv">
-        <span>Clique ou arraste o CSV da sessão aqui</span>
-        <span class="hint">Um arquivo = uma GvG (uma sessão do histórico)</span>
-      </label>
+      <div class="uploadGrid">
+        <label class="dropzone" id="dropzonePrimaria">
+          <input type="file" id="fileInputPrimaria" accept=".csv">
+          <span id="labelPrimaria">CSV da Primária</span>
+          <span class="hint">Clique ou arraste aqui</span>
+        </label>
+        <label class="dropzone" id="dropzoneSecundaria">
+          <input type="file" id="fileInputSecundaria" accept=".csv">
+          <span id="labelSecundaria">CSV da Secundária</span>
+          <span class="hint">Clique ou arraste aqui</span>
+        </label>
+      </div>
       <div class="status" id="uploadStatus"></div>
     </section>
 
-    <section id="previewSection" style="display:none;">
-      <h2>2. Conferir antes de importar</h2>
-      <div class="sessionInfo">
-        <div class="item"><span class="l">Sessão</span><span class="v" id="sessLabel">—</span></div>
-        <div class="item"><span class="l">Data</span><span class="v" id="sessDate">—</span></div>
-        <div class="item"><span class="l">Jogadores</span><span class="v" id="sessCount">—</span></div>
+    <section id="scoreSection" style="display:none;">
+      <h2>2. Placar e adversário</h2>
+      <div class="field">
+        <label>Guilda adversária</label>
+        <input type="text" id="inputOpponent" placeholder="ex: Tempest">
       </div>
-      <div class="table-scroll">
-        <table>
-          <thead><tr>
-            <th>Nick</th><th>Conta</th><th>Classe</th><th>Arena</th><th>Formato</th>
-            <th class="num">Marcas</th><th class="num">Monst.</th><th class="num">Chefe</th>
-            <th class="num">Oc.S</th><th class="num">Oc.A</th><th class="num">Oc.B</th>
-            <th class="num">Abates</th><th class="num">Assist.</th><th class="num">Mortes</th><th class="num">Pontos</th>
-          </tr></thead>
-          <tbody id="previewBody"></tbody>
-        </table>
+      <div class="field">
+        <label>Placar (Minducas × Adversária)</label>
+        <div class="scoreRow">
+          <input type="number" id="inputOurScore" placeholder="384">
+          <span class="x">×</span>
+          <input type="number" id="inputOppScore" placeholder="0">
+        </div>
+      </div>
+      <div class="subtitle">Pode deixar em branco e preencher depois pelo Histórico, se ainda não souber.</div>
+    </section>
+
+    <section id="previewSection" style="display:none;">
+      <h2>3. Conferir antes de importar</h2>
+      <div class="sessionInfo">
+        <div class="item"><span class="l">Evento</span><span class="v" id="sessLabel">—</span></div>
+        <div class="item"><span class="l">Data</span><span class="v" id="sessDate">—</span></div>
       </div>
       <div class="status" id="previewStatus"></div>
+
+      <div id="previewPrimariaBlock" style="display:none;">
+        <div class="arenaBlockTitle">Primária</div>
+        <div class="table-scroll">
+          <table>
+            <thead><tr>
+              <th>Nick</th><th>Conta</th><th>Classe</th><th>Formato</th>
+              <th class="num">Marcas</th><th class="num">Monst.</th><th class="num">Chefe</th>
+              <th class="num">Oc.S</th><th class="num">Oc.A</th><th class="num">Oc.B</th>
+              <th class="num">Abates</th><th class="num">Assist.</th><th class="num">Mortes</th><th class="num">Pontos</th>
+            </tr></thead>
+            <tbody id="previewBodyPrimaria"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div id="previewSecundariaBlock" style="display:none;">
+        <div class="arenaBlockTitle">Secundária</div>
+        <div class="table-scroll">
+          <table>
+            <thead><tr>
+              <th>Nick</th><th>Conta</th><th>Classe</th><th>Formato</th>
+              <th class="num">Marcas</th><th class="num">Monst.</th><th class="num">Chefe</th>
+              <th class="num">Oc.S</th><th class="num">Oc.A</th><th class="num">Oc.B</th>
+              <th class="num">Abates</th><th class="num">Assist.</th><th class="num">Mortes</th><th class="num">Pontos</th>
+            </tr></thead>
+            <tbody id="previewBodySecundaria"></tbody>
+          </table>
+        </div>
+      </div>
+
       <div style="margin-top:14px;">
         <button class="btn primary" id="btnImport">Confirmar importação</button>
         <button class="btn secondary" id="btnCancel">Cancelar</button>
@@ -93,8 +148,10 @@
   const gate = document.getElementById('gate');
   const gateMsg = document.getElementById('gateMsg');
 
-  let parsedRows = [];
-  let sessionMeta = { label: '', date: '' };
+  const arenas = {
+    primaria: { rows: null, meta: null },
+    secundaria: { rows: null, meta: null },
+  };
 
   function parseCSV(text){
     const lines = text.split(/\r?\n/).filter(l => l.trim().length > 0);
@@ -130,7 +187,7 @@
     return rows;
   }
 
-  async function handleFile(file){
+  async function handleFile(arenaKey, file){
     const uploadStatus = document.getElementById('uploadStatus');
     uploadStatus.className = 'status';
     uploadStatus.textContent = 'Lendo arquivo...';
@@ -143,37 +200,35 @@
       return;
     }
 
-    sessionMeta = { label: rows[0].sessaoLabel || 'Sessão sem nome', date: rows[0].sessaoData || '' };
-
-    uploadStatus.className = 'status ok';
-    uploadStatus.textContent = `${rows.length} linha(s) lida(s). Buscando contas vinculadas...`;
-
     const { data: profiles } = await client.from('profiles').select('id, nick');
     const profileByNick = {};
     (profiles || []).forEach(p => { profileByNick[p.nick.toLowerCase()] = p.id; });
 
-    parsedRows = rows.map(r => ({ ...r, player_id: profileByNick[r.nick.toLowerCase()] || null }));
+    arenas[arenaKey].rows = rows.map(r => ({ ...r, player_id: profileByNick[r.nick.toLowerCase()] || null }));
+    arenas[arenaKey].meta = { label: rows[0].sessaoLabel || 'Sessão sem nome', date: rows[0].sessaoData || '' };
 
-    renderPreview();
+    const dz = document.getElementById(arenaKey === 'primaria' ? 'dropzonePrimaria' : 'dropzoneSecundaria');
+    dz.classList.add('filled');
+    document.getElementById(arenaKey === 'primaria' ? 'labelPrimaria' : 'labelSecundaria').textContent =
+      `${arenaKey === 'primaria' ? 'Primária' : 'Secundária'} — ${rows.length} jogador(es) ✓`;
+
     uploadStatus.className = 'status ok';
-    uploadStatus.textContent = `${rows.length} linha(s) prontas pra conferência.`;
+    uploadStatus.textContent = 'Arquivo lido com sucesso.';
+
+    document.getElementById('scoreSection').style.display = 'block';
+    renderPreview();
   }
 
-  function renderPreview(){
-    document.getElementById('previewSection').style.display = 'block';
-    document.getElementById('sessLabel').textContent = sessionMeta.label;
-    document.getElementById('sessDate').textContent = sessionMeta.date || '—';
-    document.getElementById('sessCount').textContent = parsedRows.length;
+  function cleanLabelOf(meta){
+    return (meta.label || '').replace(/\s*-\s*(Prim[áa]ria|Secund[áa]ria)\s*$/i, '').trim() || meta.label;
+  }
 
-    const linkedCount = parsedRows.filter(r => r.player_id).length;
-    document.getElementById('previewStatus').textContent = `${linkedCount} de ${parsedRows.length} jogador(es) têm conta no site. Os demais entram sem vínculo até se cadastrarem com o mesmo nick.`;
-
-    document.getElementById('previewBody').innerHTML = parsedRows.map(r => `
+  function renderArenaRows(rows){
+    return rows.map(r => `
       <tr>
         <td>${r.nick}${r.staff ? ' <span class="badge linked" style="background:rgba(212,169,74,.15);color:var(--gold);">Staff</span>' : ''}</td>
         <td>${r.player_id ? '<span class="badge linked">Vinculado</span>' : '<span class="badge unlinked">Sem conta</span>'}</td>
         <td>${r.classe}</td>
-        <td>${arenaTag(r.arena)}</td>
         <td>${formatTag(r.formato)}</td>
         <td class="num">${r.marcas}</td>
         <td class="num">${r.monstros}</td>
@@ -188,11 +243,43 @@
       </tr>`).join('');
   }
 
+  function renderPreview(){
+    const meta = arenas.primaria.meta || arenas.secundaria.meta;
+    if(!meta) return;
+
+    document.getElementById('previewSection').style.display = 'block';
+    document.getElementById('sessLabel').textContent = cleanLabelOf(meta);
+    document.getElementById('sessDate').textContent = meta.date || '—';
+
+    let totalLinked = 0, totalRows = 0;
+    ['primaria','secundaria'].forEach(key => {
+      const block = document.getElementById(key === 'primaria' ? 'previewPrimariaBlock' : 'previewSecundariaBlock');
+      const body = document.getElementById(key === 'primaria' ? 'previewBodyPrimaria' : 'previewBodySecundaria');
+      const rows = arenas[key].rows;
+      if(rows && rows.length){
+        block.style.display = 'block';
+        body.innerHTML = renderArenaRows(rows);
+        totalLinked += rows.filter(r => r.player_id).length;
+        totalRows += rows.length;
+      } else {
+        block.style.display = 'none';
+      }
+    });
+
+    document.getElementById('previewStatus').textContent = `${totalLinked} de ${totalRows} jogador(es) têm conta no site. Os demais entram sem vínculo até se cadastrarem com o mesmo nick.`;
+  }
+
   document.getElementById('btnCancel').addEventListener('click', ()=>{
-    parsedRows = [];
+    arenas.primaria.rows = null; arenas.primaria.meta = null;
+    arenas.secundaria.rows = null; arenas.secundaria.meta = null;
     document.getElementById('previewSection').style.display = 'none';
+    document.getElementById('scoreSection').style.display = 'none';
     document.getElementById('uploadStatus').textContent = '';
     document.getElementById('importStatus').textContent = '';
+    document.getElementById('dropzonePrimaria').classList.remove('filled');
+    document.getElementById('dropzoneSecundaria').classList.remove('filled');
+    document.getElementById('labelPrimaria').textContent = 'CSV da Primária';
+    document.getElementById('labelSecundaria').textContent = 'CSV da Secundária';
   });
 
   // ---- Recalcula o ranking acumulado a partir de TODAS as sessões já guardadas ----
@@ -210,19 +297,18 @@
       return;
     }
 
-    // ordena cronologicamente por data da sessão
     const rows = (allRows || []).slice().sort((a,b) => {
       const da = a.gvg_sessions?.gvg_date || '';
       const db = b.gvg_sessions?.gvg_date || '';
       return da.localeCompare(db);
     });
 
-    const groups = {}; // chave: player_id ou nick em minúsculo
+    const groups = {};
     rows.forEach(r => {
       const key = r.player_id || ('nick:' + r.nick.toLowerCase());
       if(!groups[key]) groups[key] = { nick:r.nick, classe:r.classe, grupo:r.grupo, staff:r.staff, player_id:r.player_id, sessions:[] };
       const g = groups[key];
-      g.nick = r.nick; g.classe = r.classe; g.grupo = r.grupo; g.staff = r.staff; // fica com os dados da linha mais recente
+      g.nick = r.nick; g.classe = r.classe; g.grupo = r.grupo; g.staff = r.staff;
       g.sessions.push(r);
     });
 
@@ -272,10 +358,16 @@
     importStatus.className = 'status';
     importStatus.textContent = 'Vinculando ao evento de GvG...';
 
-    const eventDate = sessionMeta.date || new Date().toISOString().slice(0,10);
-    const cleanLabel = sessionMeta.label.replace(/\s*-\s*(Prim[áa]ria|Secund[áa]ria)\s*$/i, '').trim() || sessionMeta.label;
+    const meta = arenas.primaria.meta || arenas.secundaria.meta;
+    const eventDate = meta.date || new Date().toISOString().slice(0,10);
+    const cleanLabel = cleanLabelOf(meta);
 
-    // acha o evento já existente pra essa data, ou cria um novo
+    const opponent_guild = document.getElementById('inputOpponent').value.trim() || null;
+    const ourVal = document.getElementById('inputOurScore').value;
+    const oppVal = document.getElementById('inputOppScore').value;
+    const our_score = ourVal === '' ? null : Number(ourVal);
+    const opponent_score = oppVal === '' ? null : Number(oppVal);
+
     let eventId;
     const { data: existingEvent } = await client
       .from('gvg_events')
@@ -285,10 +377,11 @@
 
     if(existingEvent){
       eventId = existingEvent.id;
+      await client.from('gvg_events').update({ opponent_guild, our_score, opponent_score }).eq('id', eventId);
     } else {
       const { data: newEvent, error: eventError } = await client
         .from('gvg_events')
-        .insert({ event_date: eventDate, label: cleanLabel })
+        .insert({ event_date: eventDate, label: cleanLabel, opponent_guild, our_score, opponent_score })
         .select('id')
         .single();
       if(eventError || !newEvent){
@@ -300,59 +393,65 @@
       eventId = newEvent.id;
     }
 
-    // arena dominante desta sessão (baseado na maioria das linhas do CSV)
-    const arenaCounts = {};
-    parsedRows.forEach(r => { arenaCounts[r.arena] = (arenaCounts[r.arena]||0) + 1; });
-    const sessionArena = Object.keys(arenaCounts).sort((a,b)=>arenaCounts[b]-arenaCounts[a])[0] || 'primaria';
+    let totalImported = 0;
+    for(const arenaKey of ['primaria','secundaria']){
+      const rows = arenas[arenaKey].rows;
+      if(!rows || !rows.length) continue;
+      const arenaMeta = arenas[arenaKey].meta;
 
-    importStatus.textContent = 'Criando registro da sessão...';
+      importStatus.textContent = `Criando sessão da ${arenaKey === 'primaria' ? 'Primária' : 'Secundária'}...`;
 
-    const { data: sessionRow, error: sessionError } = await client
-      .from('gvg_sessions')
-      .insert({ label: sessionMeta.label, gvg_date: eventDate, arena: sessionArena, gvg_event_id: eventId })
-      .select('id')
-      .single();
+      const { data: sessionRow, error: sessionError } = await client
+        .from('gvg_sessions')
+        .insert({ label: arenaMeta.label, gvg_date: eventDate, arena: arenaKey, gvg_event_id: eventId })
+        .select('id')
+        .single();
 
-    if(sessionError || !sessionRow){
-      importStatus.className = 'status err';
-      importStatus.textContent = 'Erro ao criar sessão: ' + (sessionError?.message || 'desconhecido');
-      btn.disabled = false;
-      return;
-    }
+      if(sessionError || !sessionRow){
+        importStatus.className = 'status err';
+        importStatus.textContent = `Erro ao criar sessão da ${arenaKey}: ` + (sessionError?.message || 'desconhecido');
+        btn.disabled = false;
+        return;
+      }
 
-    const playersPayload = parsedRows.map(r => ({
-      session_id: sessionRow.id, player_id: r.player_id, nick: r.nick, classe: r.classe, grupo: r.grupo, staff: r.staff,
-      arena: r.arena, formato: r.formato,
-      marcas: r.marcas, monstros: r.monstros, chefes: r.chefes,
-      ocupacao_s: r.ocupacao_s, ocupacao_a: r.ocupacao_a, ocupacao_b: r.ocupacao_b,
-      abates: r.abates, assistencias: r.assistencias, mortes: r.mortes, pontos: r.pontos,
-    }));
+      const playersPayload = rows.map(r => ({
+        session_id: sessionRow.id, player_id: r.player_id, nick: r.nick, classe: r.classe, grupo: r.grupo, staff: r.staff,
+        arena: r.arena, formato: r.formato,
+        marcas: r.marcas, monstros: r.monstros, chefes: r.chefes,
+        ocupacao_s: r.ocupacao_s, ocupacao_a: r.ocupacao_a, ocupacao_b: r.ocupacao_b,
+        abates: r.abates, assistencias: r.assistencias, mortes: r.mortes, pontos: r.pontos,
+      }));
 
-    const { error: playersError } = await client.from('gvg_session_players').insert(playersPayload);
-    if(playersError){
-      importStatus.className = 'status err';
-      importStatus.textContent = 'Erro ao gravar jogadores da sessão: ' + playersError.message;
-      btn.disabled = false;
-      return;
+      const { error: playersError } = await client.from('gvg_session_players').insert(playersPayload);
+      if(playersError){
+        importStatus.className = 'status err';
+        importStatus.textContent = `Erro ao gravar jogadores da ${arenaKey}: ` + playersError.message;
+        btn.disabled = false;
+        return;
+      }
+
+      totalImported += rows.length;
     }
 
     importStatus.className = 'status ok';
-    importStatus.textContent = `Sessão "${sessionMeta.label}" importada com ${parsedRows.length} jogador(es).`;
+    importStatus.textContent = `Evento "${cleanLabel}" importado com ${totalImported} registro(s) de jogador.`;
 
     await recalcRankingFromSessions(importStatus);
     btn.disabled = false;
   });
 
   // ---- Upload handlers ----
-  const dropzone = document.getElementById('dropzone');
-  const fileInput = document.getElementById('fileInput');
-  dropzone.addEventListener('dragover', e => e.preventDefault());
-  dropzone.addEventListener('drop', e => {
-    e.preventDefault();
-    if(e.dataTransfer.files[0]) handleFile(e.dataTransfer.files[0]);
-  });
-  fileInput.addEventListener('change', e => {
-    if(e.target.files[0]) handleFile(e.target.files[0]);
+  ['primaria','secundaria'].forEach(key => {
+    const dz = document.getElementById(key === 'primaria' ? 'dropzonePrimaria' : 'dropzoneSecundaria');
+    const input = document.getElementById(key === 'primaria' ? 'fileInputPrimaria' : 'fileInputSecundaria');
+    dz.addEventListener('dragover', e => e.preventDefault());
+    dz.addEventListener('drop', e => {
+      e.preventDefault();
+      if(e.dataTransfer.files[0]) handleFile(key, e.dataTransfer.files[0]);
+    });
+    input.addEventListener('change', e => {
+      if(e.target.files[0]) handleFile(key, e.target.files[0]);
+    });
   });
 
   // ---- Gate: só o dono ----
