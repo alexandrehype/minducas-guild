@@ -167,3 +167,8 @@ tr:hover td{background:#221f28;}
 .chartTab.active{background:var(--gold); color:#1a1610; border-color:var(--gold); font-weight:700;}
 .chartEmptyNote{color:var(--muted); font-size:11px; font-family:'JetBrains Mono',ui-monospace,monospace; text-align:center; margin-top:8px;}
 .aliasInline{color:var(--muted); font-family:'JetBrains Mono',ui-monospace,monospace; font-weight:400; font-size:13px; margin-left:8px; vertical-align:middle;}
+
+.itemStatus{font-family:'JetBrains Mono',ui-monospace,monospace; font-weight:600; font-size:10px; padding:2px 8px; border-radius:3px; text-transform:uppercase;}
+.itemStatus.pending{background:rgba(212,169,74,.15); color:var(--gold);}
+.itemStatus.confirmed{background:rgba(106,153,85,.15); color:var(--green);}
+.itemStatus.declined{background:rgba(179,69,63,.15); color:var(--red);}

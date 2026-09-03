@@ -63,6 +63,48 @@ function formatTag(formato){
   return `<span class="format-tag ${info.cls}">${info.text}</span>`;
 }
 
+// carrega e renderiza o histórico de fragmentos de um jogador (por id de conta e/ou nick)
+async function renderFragmentHistory(client, containerEl, playerId, nick){
+  const queries = [
+    client.from('fragment_distribution_items').select('id, page_number, frag_number, status, distribution_id, fragment_distributions(event_date)').ilike('nick', nick),
+  ];
+  if(playerId){
+    queries.push(client.from('fragment_distribution_items').select('id, page_number, frag_number, status, distribution_id, fragment_distributions(event_date)').eq('player_id', playerId));
+  }
+  const results = await Promise.all(queries);
+
+  const merged = {};
+  results.forEach(r => (r.data || []).forEach(it => { merged[it.id] = it; }));
+  const items = Object.values(merged).sort((a,b) => {
+    const da = a.fragment_distributions?.event_date || '';
+    const db = b.fragment_distributions?.event_date || '';
+    return db.localeCompare(da);
+  });
+
+  if(!items.length){
+    containerEl.innerHTML = `<div class="empty">Nenhum histórico de fragmentos ainda.</div>`;
+    return;
+  }
+
+  const STATUS_LABEL = { pending:'Pendente', confirmed:'Confirmado', declined:'Desistiu' };
+  containerEl.innerHTML = `<div class="table-scroll"><table>
+    <thead><tr><th>Data</th><th class="num">Pág.</th><th class="num">Frag.</th><th>Status</th></tr></thead>
+    <tbody>
+      ${items.map(it => {
+        const dt = it.fragment_distributions?.event_date
+          ? new Date(it.fragment_distributions.event_date + 'T00:00:00').toLocaleDateString('pt-BR')
+          : '—';
+        return `<tr>
+          <td>${dt}</td>
+          <td class="num">${it.page_number}</td>
+          <td class="num">${it.frag_number}</td>
+          <td><span class="itemStatus ${it.status}">${STATUS_LABEL[it.status] || it.status}</span></td>
+        </tr>`;
+      }).join('')}
+    </tbody>
+  </table></div>`;
+}
+
 // mostra outros nicks (in-game) já vinculados a esse mesmo jogador, diferentes do nick atual da conta
 async function renderAliases(client, containerEl, playerId, currentNick){
   if(!containerEl) return;
