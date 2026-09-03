@@ -1,0 +1,325 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Minducas — Painel da Staff</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=EB+Garamond:ital,wght@0,400;0,500;0,600;1,400&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<script src="nav.js"></script>
+<style>
+  :root{
+    --bg:#121014; --panel:#1c1922; --panel-2:#221e29; --line:#332f3c;
+    --text:#ece7de; --muted:#948d9c; --gold:#d4a94a; --gold-dim:#8a713a;
+    --red:#b3453f; --green:#6a9955;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0; min-height:100vh;
+    background:
+      radial-gradient(ellipse at top left, #1a1620 0%, transparent 55%),
+      radial-gradient(ellipse at bottom right, #171320 0%, transparent 55%),
+      var(--bg);
+    color:var(--text); font-family: 'EB Garamond', Georgia, serif;
+    padding:32px 18px 80px;
+  }
+  .wrap{max-width:900px; margin:0 auto;}
+  header{display:flex; align-items:flex-end; justify-content:space-between; gap:16px;
+    border-bottom:2px solid var(--gold-dim); padding-bottom:16px; margin-bottom:26px; flex-wrap:wrap;}
+  .flags{display:flex; gap:6px; margin-bottom:6px;}
+  .flags span{width:8px;height:8px;border-radius:50%;background:var(--gold); box-shadow:0 0 6px var(--gold);}
+  h1{font-family:'Cinzel',Georgia,serif; font-size:24px; letter-spacing:1px; text-transform:uppercase; color:var(--gold); font-weight:600; margin:0;}
+  .subtitle{color:var(--muted); font-size:12px; font-family: 'JetBrains Mono', ui-monospace, Menlo, monospace; margin-top:4px;}
+  .topnav{display:flex; align-items:center; gap:6px; flex-wrap:wrap;}
+  .navlink{
+    font-family:'JetBrains Mono', ui-monospace, Menlo, monospace; font-weight:600; font-size:11px;
+    letter-spacing:0.5px; text-transform:uppercase; color:var(--muted); text-decoration:none;
+    padding:8px 14px; border-radius:3px; border:1px solid transparent; background:none; cursor:pointer;
+  }
+  .navlink:hover{color:var(--text); border-color:var(--line);}
+  .navlink.active{background:var(--gold); color:#1a1610; font-weight:700;}
+  .navbtn{border:1px solid var(--line); color:var(--muted);}
+  .navbtn:hover{color:var(--text); border-color:var(--gold-dim);}
+  a.back:hover{color:var(--gold);}
+
+  section{background:var(--panel); border:1px solid var(--line); border-radius:4px; padding:20px 22px; margin-bottom:20px;}
+  section > h2{font-family: 'JetBrains Mono', ui-monospace, Menlo, monospace; font-size:12px; letter-spacing:2px; text-transform:uppercase;
+    color:var(--gold); margin:0 0 14px; display:flex; align-items:center; gap:10px;}
+  section > h2::after{content:""; flex:1; height:1px; background:var(--line);}
+
+  table{width:100%; border-collapse:collapse; font-size:13px;}
+  th{font-family: 'JetBrains Mono', ui-monospace, Menlo, monospace; font-weight:600; font-size:10.5px; letter-spacing:0.5px; text-transform:uppercase;
+    color:var(--muted); text-align:left; padding:8px 6px; border-bottom:1px solid var(--line);}
+  td{padding:8px 6px; border-bottom:1px solid #26222d; vertical-align:middle;}
+  tr:hover td{background:#221f28;}
+
+  .badge{font-family: 'JetBrains Mono', ui-monospace, Menlo, monospace; font-weight:600; font-size:10px; padding:2px 7px; border-radius:3px; text-transform:uppercase;}
+  .badge.pending{background:rgba(212,169,74,.15); color:var(--gold);}
+  .badge.approved{background:rgba(106,153,85,.15); color:var(--green);}
+  .badge.staff{background:rgba(139,127,199,.15); color:#8b7fc7; margin-left:6px;}
+  .badge.revoked{background:rgba(179,69,63,.15); color:var(--red); margin-left:6px;}
+  .badge.owner{background:rgba(212,169,74,.25); color:var(--gold); margin-left:6px; font-weight:700;}
+  .nickText{font-family:'JetBrains Mono',ui-monospace,monospace; font-weight:600;}
+
+  .btn{font-family: 'JetBrains Mono', ui-monospace, Menlo, monospace; font-weight:600; font-size:11px; letter-spacing:0.5px; text-transform:uppercase;
+    border:none; padding:7px 12px; border-radius:3px; cursor:pointer; margin-right:6px;}
+  .btn.approve{background:var(--gold); color:#1a1610; font-weight:bold;}
+  .btn.approve:hover{background:#e3ba5c;}
+  .btn.revoke{background:transparent; border:1px solid var(--red); color:var(--red);}
+  .btn.revoke:hover{background:var(--red); color:#fff;}
+  .btn.staffToggle{background:transparent; border:1px solid #8b7fc7; color:#8b7fc7;}
+  .btn.staffToggle:hover{background:#8b7fc7; color:#fff;}
+  .btn:disabled{opacity:.5; cursor:not-allowed;}
+
+  .empty{color:var(--muted); font-size:13px; text-align:center; padding:24px; font-family: 'JetBrains Mono', ui-monospace, Menlo, monospace;}
+  .status{font-size:12px; color:var(--muted); font-family: 'JetBrains Mono', ui-monospace, Menlo, monospace; margin-top:10px; min-height:16px;}
+  .status.err{color:var(--red);}
+  .status.ok{color:var(--green);}
+
+  .gate{max-width:420px; margin:80px auto; text-align:center;}
+  .gate p{color:var(--muted); font-family: 'JetBrains Mono', ui-monospace, Menlo, monospace; font-size:13px;}
+</style>
+</head>
+<body>
+  <div class="wrap" id="app" style="display:none;">
+    <header>
+      <div>
+        <div class="flags"><span></span><span></span><span></span></div>
+        <h1>Painel da Staff</h1>
+        <div class="subtitle">aprovação de membros da guilda</div>
+      </div>
+      <nav class="topnav" id="topNav"></nav>
+    </header>
+
+    <div class="row-actions" id="ownerActions" style="display:none; margin-bottom:20px;">
+      <a href="/importar.html" class="btn approve" style="text-decoration:none; display:inline-block;">⬇ Importar GvG</a>
+    </div>
+
+    <section>
+      <h2>Pendentes de aprovação</h2>
+      <table>
+        <thead><tr><th>Nick</th><th>Cadastrado em</th><th></th></tr></thead>
+        <tbody id="pendingBody"></tbody>
+      </table>
+      <div class="empty" id="pendingEmpty">Ninguém aguardando aprovação no momento.</div>
+    </section>
+
+    <section>
+      <h2>Membros aprovados</h2>
+      <table>
+        <thead><tr><th>Nick</th><th>Status</th><th></th></tr></thead>
+        <tbody id="approvedBody"></tbody>
+      </table>
+      <div class="empty" id="approvedEmpty">Nenhum membro aprovado ainda.</div>
+    </section>
+
+    <section>
+      <h2>Vincular registros soltos</h2>
+      <div class="subtitle" style="margin-bottom:12px;">
+        Nicks que aparecem no ranking mas ainda não têm conta vinculada (útil quando o nick do jogo é diferente do nick cadastrado no site).
+      </div>
+      <table>
+        <thead><tr><th>Nick no ranking</th><th>Vincular à conta</th><th></th></tr></thead>
+        <tbody id="orphanBody"></tbody>
+      </table>
+      <div class="empty" id="orphanEmpty">Nenhum registro solto no momento.</div>
+    </section>
+
+    <div class="status" id="statusMsg"></div>
+  </div>
+
+  <div class="gate" id="gate">
+    <p id="gateMsg">Verificando acesso...</p>
+  </div>
+
+<script>
+  const client = supabase.createClient('https://fqbgvqficprufgpuyjsh.supabase.co', 'sb_publishable_W37jIu813NWTVcokSJnd2g_JbperpeB');
+
+  const app = document.getElementById('app');
+  let viewerIsOwner = false;
+  const gate = document.getElementById('gate');
+  const gateMsg = document.getElementById('gateMsg');
+  const statusMsg = document.getElementById('statusMsg');
+
+  function showStatus(text, type){
+    statusMsg.textContent = text;
+    statusMsg.className = 'status ' + (type || '');
+  }
+
+  async function loadProfiles(){
+    const { data, error } = await client
+      .from('profiles')
+      .select('id, nick, approved, staff, removed, owner, created_at')
+      .order('created_at', { ascending: true });
+
+    if(error){
+      showStatus('Erro ao carregar membros: ' + error.message, 'err');
+      return;
+    }
+
+    const pending = data.filter(p => !p.approved);
+    const approved = data.filter(p => p.approved);
+
+    document.getElementById('pendingEmpty').style.display = pending.length ? 'none' : 'block';
+    document.getElementById('pendingBody').innerHTML = pending.map(p => `
+      <tr>
+        <td><span class="nickText">${p.nick}</span></td>
+        <td>${new Date(p.created_at).toLocaleString('pt-BR')}</td>
+        <td><button class="btn approve" data-id="${p.id}" data-act="approve">Aprovar</button></td>
+      </tr>`).join('');
+
+    document.getElementById('approvedEmpty').style.display = approved.length ? 'none' : 'block';
+    document.getElementById('approvedBody').innerHTML = approved.map(p => {
+      if(p.owner){
+        return `<tr>
+          <td><a href="perfil.html?id=${p.id}" class="nickText" style="color:var(--text); text-decoration:none; border-bottom:1px dotted var(--muted);">${p.nick}</a></td>
+          <td><span class="badge approved">Aprovado</span><span class="badge staff">Staff</span><span class="badge owner">Dono</span></td>
+          <td><span class="subtitle">imune a alterações</span></td>
+        </tr>`;
+      }
+      const staffBtn = viewerIsOwner
+        ? `<button class="btn staffToggle" data-id="${p.id}" data-act="${p.staff ? 'unstaff' : 'makestaff'}">${p.staff ? 'Remover staff' : 'Tornar staff'}</button>`
+        : '';
+      return `<tr style="${p.removed ? 'opacity:.55;' : ''}">
+        <td><a href="perfil.html?id=${p.id}" class="nickText" style="color:var(--text); text-decoration:none; border-bottom:1px dotted var(--muted);">${p.nick}</a></td>
+        <td>
+          <span class="badge approved">Aprovado</span>${p.staff ? '<span class="badge staff">Staff</span>' : ''}${p.removed ? '<span class="badge revoked">Removido</span>' : ''}
+        </td>
+        <td>
+          ${staffBtn}
+          <button class="btn revoke" data-id="${p.id}" data-act="revoke">Revogar acesso</button>
+          ${!p.staff ? `<button class="btn ${p.removed ? 'staffToggle' : 'revoke'}" data-id="${p.id}" data-act="${p.removed ? 'reactivate' : 'remove'}">${p.removed ? 'Reativar membro' : 'Remover da guilda'}</button>` : ''}
+        </td>
+      </tr>`;
+    }).join('');
+
+    document.querySelectorAll('[data-act]').forEach(btn => {
+      btn.addEventListener('click', () => handleAction(btn.dataset.id, btn.dataset.act, btn));
+    });
+  }
+
+  async function handleAction(id, action, btn){
+    btn.disabled = true;
+    let update = {};
+    if(action === 'approve') update = { approved: true };
+    if(action === 'revoke') update = { approved: false };
+    if(action === 'makestaff') update = { staff: true };
+    if(action === 'unstaff') update = { staff: false };
+    if(action === 'remove') update = { removed: true };
+    if(action === 'reactivate') update = { removed: false };
+
+    const { error } = await client.from('profiles').update(update).eq('id', id);
+    if(error){
+      showStatus('Erro: ' + error.message, 'err');
+      btn.disabled = false;
+      return;
+    }
+    showStatus('Atualizado com sucesso.', 'ok');
+    loadProfiles();
+  }
+
+  async function loadOrphans(){
+    const { data: rankingRows, error } = await client.from('ranking').select('nick, removed').is('player_id', null);
+    if(error){
+      showStatus('Erro ao carregar registros soltos: ' + error.message, 'err');
+      return;
+    }
+    const orphanMap = new Map();
+    (rankingRows||[]).forEach(r => orphanMap.set(r.nick, r.removed));
+    const orphanNicks = [...orphanMap.keys()];
+
+    const { data: profiles } = await client.from('profiles').select('id, nick').eq('approved', true).eq('removed', false);
+    const profileOptions = (profiles||[]).map(p => `<option value="${p.id}">${p.nick}</option>`).join('');
+
+    document.getElementById('orphanEmpty').style.display = orphanNicks.length ? 'none' : 'block';
+    document.getElementById('orphanBody').innerHTML = orphanNicks.map(nick => {
+      const isRemoved = orphanMap.get(nick);
+      return `
+      <tr style="${isRemoved ? 'opacity:.55;' : ''}">
+        <td><span class="nickText">${nick}</span>${isRemoved ? '<span class="badge revoked">Removido</span>' : ''}</td>
+        <td>
+          <select class="linkSelect" data-nick="${nick}" ${isRemoved ? 'disabled' : ''}>
+            <option value="">Selecionar conta...</option>
+            ${profileOptions}
+          </select>
+        </td>
+        <td>
+          <button class="btn approve" data-act="linknick" data-nick="${nick}" ${isRemoved ? 'disabled' : ''}>Vincular</button>
+          <button class="btn ${isRemoved ? 'staffToggle' : 'revoke'}" data-act="${isRemoved ? 'reactivateorphan' : 'removeorphan'}" data-nick="${nick}">${isRemoved ? 'Reativar' : 'Marcar como removido'}</button>
+        </td>
+      </tr>`;
+    }).join('');
+
+    document.querySelectorAll('[data-act=removeorphan],[data-act=reactivateorphan]').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        const nick = btn.dataset.nick;
+        const removing = btn.dataset.act === 'removeorphan';
+        btn.disabled = true;
+        const { error } = await client.rpc('staff_set_orphan_removed', { p_nick: nick, p_removed: removing });
+        if(error){
+          showStatus('Erro: ' + error.message, 'err');
+          btn.disabled = false;
+          return;
+        }
+        showStatus(`"${nick}" ${removing ? 'marcado como removido' : 'reativado'}.`, 'ok');
+        loadOrphans();
+      });
+    });
+
+    document.querySelectorAll('[data-act=linknick]').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        const nick = btn.dataset.nick;
+        const select = document.querySelector(`.linkSelect[data-nick="${CSS.escape(nick)}"]`);
+        const playerId = select.value;
+        if(!playerId){
+          showStatus('Escolha uma conta antes de vincular.', 'err');
+          return;
+        }
+        btn.disabled = true;
+        const { error } = await client.rpc('staff_link_nick', { p_orphan_nick: nick, p_player_id: playerId });
+        if(error){
+          showStatus('Erro ao vincular: ' + error.message, 'err');
+          btn.disabled = false;
+          return;
+        }
+        showStatus(`"${nick}" vinculado com sucesso.`, 'ok');
+        loadOrphans();
+      });
+    });
+  }
+
+  (async ()=>{
+    const { data: { session } } = await client.auth.getSession();
+    if(!session){
+      gateMsg.textContent = 'Você precisa entrar pra acessar essa página.';
+      setTimeout(()=>{ window.location.href = '/'; }, 1500);
+      return;
+    }
+
+    const { data: myProfile, error } = await client
+      .from('profiles')
+      .select('staff, owner')
+      .eq('id', session.user.id)
+      .single();
+
+    if(error || !myProfile || !myProfile.staff){
+      gateMsg.textContent = 'Acesso restrito à staff da guilda.';
+      return;
+    }
+
+    if(myProfile.owner){
+      document.getElementById('ownerActions').style.display = 'flex';
+    }
+    viewerIsOwner = !!myProfile.owner;
+
+    renderTopNav(client, myProfile, 'staff');
+    gate.style.display = 'none';
+    app.style.display = 'block';
+    loadProfiles();
+    loadOrphans();
+  })();
+</script>
+</body>
+</html>

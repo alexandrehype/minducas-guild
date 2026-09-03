@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Minducas — Histórico de GvGs</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=EB+Garamond:ital,wght@0,400;0,500;0,600;1,400&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<script src="nav.js"></script>
+<script src="helpers.js"></script>
+<style>
+  :root{
+    --bg:#121014; --panel:#1c1922; --panel-2:#221e29; --line:#332f3c;
+    --text:#ece7de; --muted:#948d9c; --gold:#d4a94a; --gold-dim:#8a713a;
+    --red:#b3453f; --green:#6a9955; --teal:#4f8f8a; --violet:#8b7fc7;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0; min-height:100vh;
+    background:
+      radial-gradient(ellipse at top left, #1a1620 0%, transparent 55%),
+      radial-gradient(ellipse at bottom right, #171320 0%, transparent 55%),
+      var(--bg);
+    color:var(--text); font-family: 'EB Garamond', Georgia, serif;
+    padding:32px 18px 80px;
+  }
+  .wrap{max-width:1100px; margin:0 auto;}
+  header{display:flex; align-items:flex-end; justify-content:space-between; gap:16px;
+    border-bottom:2px solid var(--gold-dim); padding-bottom:16px; margin-bottom:26px; flex-wrap:wrap;}
+  .flags{display:flex; gap:6px; margin-bottom:6px;}
+  .flags span{width:8px;height:8px;border-radius:50%;background:var(--gold); box-shadow:0 0 6px var(--gold);}
+  h1{font-family:'Cinzel',Georgia,serif; font-weight:600; font-size:24px; letter-spacing:1px; text-transform:uppercase; color:var(--gold); margin:0;}
+  .subtitle{color:var(--muted); font-size:12px; font-family:'JetBrains Mono',ui-monospace,monospace; margin-top:4px;}
+
+  .topnav{display:flex; align-items:center; gap:6px; flex-wrap:wrap;}
+  .navlink{
+    font-family:'JetBrains Mono', ui-monospace, monospace; font-weight:600; font-size:11px;
+    letter-spacing:0.5px; text-transform:uppercase; color:var(--muted); text-decoration:none;
+    padding:8px 14px; border-radius:3px; border:1px solid transparent; background:none; cursor:pointer;
+  }
+  .navlink:hover{color:var(--text); border-color:var(--line);}
+  .navlink.active{background:var(--gold); color:#1a1610; font-weight:700;}
+  .navbtn{border:1px solid var(--line); color:var(--muted);}
+  .navbtn:hover{color:var(--text); border-color:var(--gold-dim);}
+
+  .history-item{border:1px solid var(--line); border-radius:4px; margin-bottom:12px; background:var(--panel); overflow:hidden;}
+  .history-item summary{
+    display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap;
+    padding:14px 18px; margin:0; cursor:pointer; list-style:none;
+    font-family:'JetBrains Mono',ui-monospace,monospace; font-size:13px; color:var(--text);
+  }
+  .history-item summary::-webkit-details-marker{display:none;}
+  .history-item summary .h-meta{color:var(--muted); font-size:11.5px;}
+  .history-total{color:var(--gold); font-weight:700;}
+  .history-item .table-scroll{margin:0 18px 18px;}
+
+  table{width:100%; border-collapse:collapse; font-size:12.5px; min-width:950px;}
+  th{font-family:'JetBrains Mono',ui-monospace,monospace; font-weight:600; font-size:10px; letter-spacing:0.5px; text-transform:uppercase;
+    color:var(--muted); text-align:left; padding:7px 6px; border-bottom:1px solid var(--line);}
+  td{padding:6px; border-bottom:1px solid #26222d;}
+  .num{text-align:center; font-family:'JetBrains Mono',ui-monospace,monospace;}
+  tr:hover td{background:#221f28;}
+  .classIconImg{width:22px; height:22px; object-fit:contain; vertical-align:middle;}
+  .nickText{font-family:'JetBrains Mono',ui-monospace,monospace; font-weight:600;}
+  .staffBadge{font-family:'JetBrains Mono',ui-monospace,monospace; font-weight:600; font-size:10px; letter-spacing:0.5px; text-transform:uppercase;
+    padding:2px 7px; border-radius:3px; background:rgba(212,169,74,.15); color:var(--gold); margin-left:6px;}
+
+  .arena-tag{font-family:'JetBrains Mono',ui-monospace,monospace; font-weight:600; font-size:10px; letter-spacing:0.5px; text-transform:uppercase; padding:2px 7px; border-radius:3px;}
+  .arena-primaria{background:rgba(212,169,74,.15); color:var(--gold);}
+  .arena-secundaria{background:rgba(79,143,138,.15); color:var(--teal);}
+  .format-tag{font-family:'JetBrains Mono',ui-monospace,monospace; font-weight:600; font-size:10px; letter-spacing:0.3px; padding:2px 7px; border-radius:3px; display:inline-block; white-space:nowrap;}
+  .fmt-marca{background:rgba(212,169,74,.15); color:var(--gold);}
+  .fmt-chefe{background:rgba(179,69,63,.15); color:var(--red);}
+  .fmt-occ{background:rgba(79,143,138,.15); color:var(--teal);}
+  .fmt-mixed{background:rgba(139,127,199,.15); color:var(--violet);}
+  .fmt-none{background:transparent; color:var(--muted);}
+
+  .empty{color:var(--muted); font-size:13px; text-align:center; padding:30px; font-family:'JetBrains Mono',ui-monospace,monospace;}
+  .status{font-size:12px; color:var(--muted); font-family:'JetBrains Mono',ui-monospace,monospace; margin-top:10px; min-height:16px;}
+  .status.err{color:var(--red);}
+
+  .gate{max-width:420px; margin:80px auto; text-align:center;}
+  .gate p{color:var(--muted); font-family:'JetBrains Mono',ui-monospace,monospace; font-size:13px;}
+</style>
+</head>
+<body>
+  <div class="wrap" id="app" style="display:none;">
+    <header>
+      <div>
+        <div class="flags"><span></span><span></span><span></span></div>
+        <h1>Histórico de GvGs</h1>
+        <div class="subtitle">todas as sessões já importadas</div>
+      </div>
+      <nav class="topnav" id="topNav"></nav>
+    </header>
+
+    <div id="historyList"></div>
+    <div class="empty" id="historyEmpty">Nenhuma GvG importada ainda.</div>
+    <div class="status" id="historyStatus"></div>
+  </div>
+
+  <div class="gate" id="gate">
+    <p id="gateMsg">Verificando acesso...</p>
+  </div>
+
+<script>
+  const client = supabase.createClient('https://fqbgvqficprufgpuyjsh.supabase.co', 'sb_publishable_W37jIu813NWTVcokSJnd2g_JbperpeB');
+  const app = document.getElementById('app');
+  const gate = document.getElementById('gate');
+  const gateMsg = document.getElementById('gateMsg');
+
+  function renderSessionRows(players){
+    return players.map(p => `
+      <tr>
+        <td>${p.player_id ? `<a href="perfil.html?id=${p.player_id}" class="nickText" style="color:var(--text); text-decoration:none; border-bottom:1px dotted var(--muted);">${p.nick}</a>` : `<span class="nickText">${p.nick}</span>`}${p.staff ? '<span class="staffBadge">Staff</span>' : ''}</td>
+        <td>${classIcon(p.classe, 22)}</td>
+        <td>${arenaTag(p.arena)}</td>
+        <td>${formatTag(p.formato)}</td>
+        <td class="num">${p.marcas ?? 0}</td>
+        <td class="num">${p.ocupacao_s ?? 0}</td>
+        <td class="num">${p.ocupacao_a ?? 0}</td>
+        <td class="num">${p.ocupacao_b ?? 0}</td>
+        <td class="num">${p.monstros ?? 0}</td>
+        <td class="num">${p.chefes ?? 0}</td>
+        <td class="num">${p.abates ?? 0}</td>
+        <td class="num">${p.assistencias ?? 0}</td>
+        <td class="num">${p.mortes ?? 0}</td>
+        <td class="num" style="color:var(--gold); font-weight:700;">${Math.round(p.pontos ?? 0)}</td>
+      </tr>`).join('');
+  }
+
+  async function loadHistory(){
+    const { data: sessions, error } = await client
+      .from('gvg_sessions')
+      .select('id, label, gvg_date')
+      .order('gvg_date', { ascending: false });
+
+    if(error){
+      document.getElementById('historyStatus').className = 'status err';
+      document.getElementById('historyStatus').textContent = 'Erro ao carregar histórico: ' + error.message;
+      return;
+    }
+
+    document.getElementById('historyEmpty').style.display = (sessions && sessions.length) ? 'none' : 'block';
+    if(!sessions || !sessions.length) return;
+
+    const { data: allPlayers, error: playersError } = await client
+      .from('gvg_session_players')
+      .select('*');
+
+    if(playersError){
+      document.getElementById('historyStatus').className = 'status err';
+      document.getElementById('historyStatus').textContent = 'Erro ao carregar jogadores das sessões: ' + playersError.message;
+      return;
+    }
+
+    document.getElementById('historyList').innerHTML = sessions.map(sess => {
+      const players = (allPlayers || []).filter(p => p.session_id === sess.id).sort((a,b) => (b.pontos||0) - (a.pontos||0));
+      const total = players.reduce((s,p) => s + (Number(p.pontos)||0), 0);
+      const dt = sess.gvg_date ? new Date(sess.gvg_date + 'T00:00:00').toLocaleDateString('pt-BR') : '—';
+
+      return `<details class="history-item">
+        <summary>
+          <span>${sess.label}</span>
+          <span class="h-meta">${dt} · ${players.length} jogador(es) · <span class="history-total">${Math.round(total)} pts</span></span>
+        </summary>
+        <div class="table-scroll">
+          <table>
+            <thead><tr>
+              <th>Nick</th><th>Classe</th><th>Arena</th><th>Formato</th>
+              <th class="num">Marcas</th><th class="num">Oc. S</th><th class="num">Oc. A</th><th class="num">Oc. B</th>
+              <th class="num">Monst.</th><th class="num">Chefe</th>
+              <th class="num">Abates</th><th class="num">Assist.</th><th class="num">Mortes</th><th class="num">Pontos</th>
+            </tr></thead>
+            <tbody>${renderSessionRows(players)}</tbody>
+          </table>
+        </div>
+      </details>`;
+    }).join('');
+  }
+
+  (async ()=>{
+    const { data: { session } } = await client.auth.getSession();
+    if(!session){
+      gateMsg.textContent = 'Você precisa entrar pra acessar essa página.';
+      setTimeout(()=>{ window.location.href = '/'; }, 1200);
+      return;
+    }
+
+    const { data: profile, error } = await client
+      .from('profiles')
+      .select('approved, staff, removed')
+      .eq('id', session.user.id)
+      .single();
+
+    if(error || !profile || profile.removed){
+      gateMsg.textContent = 'Sua conta não tem acesso a essa página.';
+      await client.auth.signOut();
+      return;
+    }
+    if(!profile.approved){
+      gateMsg.textContent = 'Seu cadastro ainda está aguardando aprovação da staff.';
+      await client.auth.signOut();
+      return;
+    }
+
+    renderTopNav(client, profile, 'historico');
+    gate.style.display = 'none';
+    app.style.display = 'block';
+    loadHistory();
+  })();
+</script>
+</body>
+</html>

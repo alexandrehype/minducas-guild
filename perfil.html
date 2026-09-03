@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Minducas — Perfil do Membro</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=EB+Garamond:ital,wght@0,400;0,500;0,600;1,400&family=JetBrains+Mono:wght@400;500;600;700&family=Russo+One&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<script src="nav.js"></script>
+<script src="helpers.js"></script>
+<style>
+  :root{
+    --bg:#121014; --panel:#1c1922; --panel-2:#221e29; --line:#332f3c;
+    --text:#ece7de; --muted:#948d9c; --gold:#d4a94a; --gold-dim:#8a713a;
+    --red:#b3453f; --green:#6a9955; --teal:#4f8f8a; --violet:#8b7fc7;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0; min-height:100vh;
+    background:
+      radial-gradient(ellipse at top left, #1a1620 0%, transparent 55%),
+      radial-gradient(ellipse at bottom right, #171320 0%, transparent 55%),
+      var(--bg);
+    color:var(--text); font-family: 'EB Garamond', Georgia, serif;
+    padding:32px 18px 80px;
+  }
+  .wrap{max-width:760px; margin:0 auto;}
+  header{display:flex; align-items:flex-end; justify-content:space-between; gap:16px;
+    border-bottom:2px solid var(--gold-dim); padding-bottom:16px; margin-bottom:26px; flex-wrap:wrap;}
+  .flags{display:flex; gap:6px; margin-bottom:6px;}
+  .flags span{width:8px;height:8px;border-radius:50%;background:var(--gold); box-shadow:0 0 6px var(--gold);}
+  h1{font-family:'Cinzel',Georgia,serif; font-size:24px; letter-spacing:1px; text-transform:uppercase; color:var(--gold); font-weight:600; margin:0;}
+  .subtitle{color:var(--muted); font-size:12px; font-family: 'JetBrains Mono', ui-monospace, Menlo, monospace; margin-top:4px;}
+  .topnav{display:flex; align-items:center; gap:6px; flex-wrap:wrap;}
+  .navlink{
+    font-family:'JetBrains Mono', ui-monospace, Menlo, monospace; font-weight:600; font-size:11px;
+    letter-spacing:0.5px; text-transform:uppercase; color:var(--muted); text-decoration:none;
+    padding:8px 14px; border-radius:3px; border:1px solid transparent; background:none; cursor:pointer;
+  }
+  .navlink:hover{color:var(--text); border-color:var(--line);}
+  .navlink.active{background:var(--gold); color:#1a1610; font-weight:700;}
+  .navbtn{border:1px solid var(--line); color:var(--muted);}
+  .navbtn:hover{color:var(--text); border-color:var(--gold-dim);}
+
+  section{background:var(--panel); border:1px solid var(--line); border-radius:4px; padding:24px 26px; margin-bottom:20px;}
+  section > h2{font-family: 'JetBrains Mono', ui-monospace, Menlo, monospace; font-weight:600; font-size:12px; letter-spacing:2px; text-transform:uppercase;
+    color:var(--gold); margin:0 0 18px; display:flex; align-items:center; gap:10px;}
+  section > h2::after{content:""; flex:1; height:1px; background:var(--line);}
+
+  .charHead{margin-bottom:22px;}
+  .charName{font-family:'Russo One',Georgia,serif; font-weight:400; letter-spacing:0.5px; font-size:24px; color:var(--text); display:flex; align-items:center;}
+  .charMeta{display:flex; gap:8px; margin-top:6px; flex-wrap:wrap; align-items:center;}
+  .tag{font-family: 'JetBrains Mono', ui-monospace, Menlo, monospace; font-weight:600; font-size:10.5px; letter-spacing:0.5px; text-transform:uppercase;
+    padding:3px 9px; border-radius:3px;}
+  .tag.g-Ataque{background:rgba(179,69,63,.15); color:var(--red);}
+  .tag.g-Versatil{background:rgba(79,143,138,.15); color:var(--teal);}
+  .tag.g-Suporte{background:rgba(139,127,199,.15); color:var(--violet);}
+  .tag.staff{background:rgba(212,169,74,.15); color:var(--gold);}
+
+  .highlights{display:grid; grid-template-columns:repeat(3, 1fr); gap:14px; margin-bottom:20px;}
+  .hCard{background:var(--panel-2); border:1px solid var(--gold-dim); border-radius:4px; padding:18px 12px; text-align:center;}
+  .hCard .num{font-family: 'JetBrains Mono', ui-monospace, Menlo, monospace; font-size:26px; color:var(--gold); font-weight:bold; line-height:1;}
+  .hCard .lbl{font-family: 'JetBrains Mono', ui-monospace, Menlo, monospace; font-weight:600; font-size:10px; color:var(--muted); text-transform:uppercase; letter-spacing:1px; margin-top:6px;}
+
+  .stats{display:grid; grid-template-columns:repeat(auto-fit, minmax(110px,1fr)); gap:14px;}
+  .stat{background:var(--panel-2); border:1px solid var(--line); border-radius:3px; padding:14px 12px; text-align:center;}
+  .stat .v{font-family: 'JetBrains Mono', ui-monospace, Menlo, monospace; font-size:20px; color:var(--text); font-weight:bold;}
+  .stat .l{font-family: 'JetBrains Mono', ui-monospace, Menlo, monospace; font-weight:600; font-size:10px; color:var(--muted); text-transform:uppercase; letter-spacing:0.5px; margin-top:4px;}
+  .statIcon{width:22px; height:22px; object-fit:contain; opacity:.85; display:block; margin:0 auto 6px;}
+  .classIconImg{width:28px; height:28px; object-fit:contain; vertical-align:middle; margin-right:8px;}
+
+  .gate{max-width:420px; margin:80px auto; text-align:center;}
+  .gate p{color:var(--muted); font-family: 'JetBrains Mono', ui-monospace, Menlo, monospace; font-size:13px;}
+</style>
+</head>
+<body>
+  <div class="wrap" id="app" style="display:none;">
+    <header>
+      <div>
+        <div class="flags"><span></span><span></span><span></span></div>
+        <h1>Minducas</h1>
+        <div class="subtitle" id="welcomeMsg">carregando...</div>
+      </div>
+      <nav class="topnav" id="topNav"></nav>
+    </header>
+
+    <section id="charSection">
+      <h2>Personagem</h2>
+      <div id="charContent"></div>
+    </section>
+
+    <section id="freqSection">
+      <h2>Frequência na Guilda</h2>
+      <div id="freqContent" class="stats"></div>
+    </section>
+  </div>
+
+  <div class="gate" id="gate">
+    <p id="gateMsg">Verificando acesso...</p>
+  </div>
+
+<script>
+  const client = supabase.createClient('https://fqbgvqficprufgpuyjsh.supabase.co', 'sb_publishable_W37jIu813NWTVcokSJnd2g_JbperpeB');
+
+  const app = document.getElementById('app');
+  const gate = document.getElementById('gate');
+  const gateMsg = document.getElementById('gateMsg');
+
+  function renderChar(profile, row){
+    document.getElementById('welcomeMsg').textContent = `perfil de ${profile.nick}`;
+
+    const g = CLASS_GROUP[profile.classe] || '';
+    const r = row || {}; // sem registro no ranking ainda -> tudo zerado
+
+    const abates = r.abates ?? 0;
+    const assist = r.assistencias ?? 0;
+    const mortes = r.mortes ?? 0;
+    const kda = mortes > 0 ? ((abates + assist) / mortes).toFixed(2) : (abates + assist).toFixed(2);
+
+    document.getElementById('charContent').innerHTML = `
+      <div class="charHead">
+        <div class="charName">${classIcon(profile.classe)}${profile.nick}</div>
+        <div class="charMeta">
+          ${g ? groupTag(g) : ''}
+          <span style="color:var(--muted); font-family: 'JetBrains Mono', ui-monospace, Menlo, monospace; font-size:12px;">${profile.classe || 'classe não definida'}</span>
+          ${profile.staff ? '<span class="tag staff">Staff</span>' : ''}
+        </div>
+      </div>
+
+      <div class="highlights">
+        <div class="hCard"><div class="num">${r.media ?? 0}</div><div class="lbl">Média</div></div>
+        <div class="hCard"><div class="num">${r.tendencia ?? '—'}</div><div class="lbl">Tendência</div></div>
+        <div class="hCard"><div class="num">${kda}</div><div class="lbl">KDA</div></div>
+      </div>
+
+      <div class="stats">
+        <div class="stat"><img class="statIcon" src="icones/ranking/finish.png" onerror="this.style.display='none'"><div class="v">${r.marcas ?? 0}</div><div class="l">Marcas</div></div>
+        <div class="stat"><img class="statIcon" src="icones/ranking/castle-tower.png" onerror="this.style.display='none'"><div class="v">${r.ocupacao_s ?? 0}</div><div class="l">Ocup. S</div></div>
+        <div class="stat"><img class="statIcon" src="icones/ranking/castle-tower.png" onerror="this.style.display='none'"><div class="v">${r.ocupacao_a ?? 0}</div><div class="l">Ocup. A</div></div>
+        <div class="stat"><img class="statIcon" src="icones/ranking/castle-tower.png" onerror="this.style.display='none'"><div class="v">${r.ocupacao_b ?? 0}</div><div class="l">Ocup. B</div></div>
+        <div class="stat"><img class="statIcon" src="icones/ranking/monster.png" onerror="this.style.display='none'"><div class="v">${r.monstros ?? 0}</div><div class="l">Monstros</div></div>
+        <div class="stat"><img class="statIcon" src="icones/ranking/boss.png" onerror="this.style.display='none'"><div class="v">${r.chefes ?? 0}</div><div class="l">Chefes</div></div>
+        <div class="stat"><img class="statIcon" src="icones/ranking/kill.png" onerror="this.style.display='none'"><div class="v">${abates}</div><div class="l">Abates</div></div>
+        <div class="stat"><img class="statIcon" src="icones/ranking/assist.png" onerror="this.style.display='none'"><div class="v">${assist}</div><div class="l">Assist.</div></div>
+        <div class="stat"><img class="statIcon" src="icones/ranking/death.png" onerror="this.style.display='none'"><div class="v">${mortes}</div><div class="l">Mortes</div></div>
+      </div>`;
+
+    const memberSince = profile.created_at
+      ? new Date(profile.created_at).toLocaleDateString('pt-BR', { day:'2-digit', month:'2-digit', year:'numeric' })
+      : '—';
+
+    document.getElementById('freqContent').innerHTML = `
+      <div class="stat"><div class="v">${memberSince}</div><div class="l">Membro desde</div></div>
+      <div class="stat"><div class="v">${r.presencas ?? 0}</div><div class="l">Presenças</div></div>
+      <div class="stat"><div class="v">${r.ausencias ?? 0}</div><div class="l">Ausências</div></div>`;
+  }
+
+  (async ()=>{
+    const { data: { session } } = await client.auth.getSession();
+    if(!session){
+      gateMsg.textContent = 'Você precisa entrar pra acessar essa página.';
+      setTimeout(()=>{ window.location.href = '/'; }, 1200);
+      return;
+    }
+
+    const { data: viewer, error: viewerError } = await client
+      .from('profiles')
+      .select('id, nick, staff, approved, removed')
+      .eq('id', session.user.id)
+      .single();
+
+    if(viewerError || !viewer || viewer.removed){
+      gateMsg.textContent = 'Sua conta não tem acesso a essa página.';
+      await client.auth.signOut();
+      return;
+    }
+    if(!viewer.approved){
+      gateMsg.textContent = 'Seu cadastro ainda está aguardando aprovação da staff.';
+      await client.auth.signOut();
+      return;
+    }
+
+    const targetId = new URLSearchParams(window.location.search).get('id');
+    if(!targetId){
+      gateMsg.textContent = 'Nenhum jogador especificado.';
+      return;
+    }
+
+    // se for o próprio usuário, manda pro painel de verdade (editável)
+    if(targetId === viewer.id){
+      window.location.href = '/painel.html';
+      return;
+    }
+
+    const { data: profile, error: profileError } = await client
+      .from('profiles')
+      .select('id, nick, classe, staff, created_at')
+      .eq('id', targetId)
+      .single();
+
+    if(profileError || !profile){
+      gateMsg.textContent = 'Esse membro não foi encontrado (ou não está mais ativo na guilda).';
+      return;
+    }
+
+    renderTopNav(client, viewer, 'perfil');
+    gate.style.display = 'none';
+    app.style.display = 'block';
+
+    const { data: row } = await client
+      .from('ranking')
+      .select('*')
+      .eq('player_id', targetId)
+      .maybeSingle();
+
+    renderChar(profile, row);
+  })();
+</script>
+</body>
+</html>

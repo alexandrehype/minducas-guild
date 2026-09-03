@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Minducas — Acesso da Guilda</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=EB+Garamond:ital,wght@0,400;0,500;0,600;1,400&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<style>
+  :root{
+    --bg:#121014;
+    --panel:#1c1922;
+    --panel-2:#221e29;
+    --line:#332f3c;
+    --text:#ece7de;
+    --muted:#948d9c;
+    --gold:#d4a94a;
+    --gold-dim:#8a713a;
+    --red:#b3453f;
+    --green:#6a9955;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    min-height:100vh;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    background:
+      radial-gradient(ellipse at top left, #1a1620 0%, transparent 55%),
+      radial-gradient(ellipse at bottom right, #171320 0%, transparent 55%),
+      var(--bg);
+    color:var(--text);
+    font-family: 'EB Garamond', Georgia, serif;
+    padding:20px;
+  }
+  .card{
+    width:100%;
+    max-width:400px;
+    background:var(--panel);
+    border:1px solid var(--line);
+    border-radius:4px;
+    padding:32px 30px;
+  }
+  .flags{display:flex; gap:6px; justify-content:center; margin-bottom:10px;}
+  .flags span{width:8px;height:8px;border-radius:50%;background:var(--gold);box-shadow:0 0 6px var(--gold);}
+  h1{
+    font-family:'Cinzel',Georgia,serif;
+    text-align:center;
+    font-size:22px;
+    letter-spacing:1px;
+    text-transform:uppercase;
+    color:var(--gold);
+    font-weight:600;
+    margin:0 0 4px;
+  }
+  .subtitle{
+    text-align:center;
+    color:var(--muted);
+    font-size:12px;
+    font-family: 'JetBrains Mono', ui-monospace, Menlo, monospace;
+    margin-bottom:26px;
+  }
+  .tabs{display:flex; border-bottom:1px solid var(--line); margin-bottom:22px;}
+  .tab{
+    flex:1; text-align:center; padding:10px 0;
+    font-family: 'JetBrains Mono', ui-monospace, Menlo, monospace; font-weight:600; font-size:12px; letter-spacing:1px; text-transform:uppercase;
+    color:var(--muted); cursor:pointer; border-bottom:2px solid transparent; background:none; border-top:none; border-left:none; border-right:none;
+  }
+  .tab.active{color:var(--gold); border-bottom-color:var(--gold);}
+  .field{margin-bottom:16px;}
+  .field label{
+    display:block; font-size:11px; font-family: 'JetBrains Mono', ui-monospace, Menlo, monospace;
+    color:var(--muted); margin-bottom:6px; letter-spacing:0.5px;
+  }
+  .field input{
+    width:100%; background:#161318; border:1px solid var(--line); color:var(--text);
+    padding:11px 12px; border-radius:3px; font-size:14px; font-family: Georgia, serif;
+  }
+  .field input:focus{outline:none; border-color:var(--gold-dim);}
+  .btn{
+    width:100%;
+    background:var(--gold); color:#1a1610; border:none; padding:13px;
+    border-radius:3px; font-family: 'JetBrains Mono', ui-monospace, Menlo, monospace; font-weight:600; font-size:12px;
+    letter-spacing:1px; text-transform:uppercase; font-weight:bold; cursor:pointer; margin-top:6px;
+  }
+  .btn:hover{background:#e3ba5c;}
+  .btn:disabled{background:#5a5240; color:#928a70; cursor:not-allowed;}
+  .msg{
+    margin-top:16px; font-size:12.5px; font-family: 'JetBrains Mono', ui-monospace, Menlo, monospace;
+    padding:10px 12px; border-radius:3px; display:none; line-height:1.5;
+  }
+  .msg.show{display:block;}
+  .msg.err{background:rgba(179,69,63,.12); color:var(--red); border:1px solid rgba(179,69,63,.3);}
+  .msg.ok{background:rgba(106,153,85,.12); color:var(--green); border:1px solid rgba(106,153,85,.3);}
+  .msg.pending{background:rgba(212,169,74,.12); color:var(--gold); border:1px solid rgba(212,169,74,.3);}
+  .panel{display:none;}
+  .panel.active{display:block;}
+  .foot{text-align:center; margin-top:20px; font-size:11px; color:var(--muted); font-family: 'JetBrains Mono', ui-monospace, Menlo, monospace;}
+</style>
+</head>
+<body>
+  <div class="card">
+    <div class="flags"><span></span><span></span><span></span></div>
+    <h1>Minducas</h1>
+    <div class="subtitle">acesso restrito a membros da guilda</div>
+
+    <div class="tabs">
+      <button class="tab active" data-tab="login">Entrar</button>
+      <button class="tab" data-tab="signup">Cadastrar</button>
+    </div>
+
+    <div class="panel active" id="panel-login">
+      <div class="field">
+        <label>E-mail</label>
+        <input type="email" id="loginEmail" autocomplete="email">
+      </div>
+      <div class="field">
+        <label>Senha</label>
+        <input type="password" id="loginPassword" autocomplete="current-password">
+      </div>
+      <button class="btn" id="btnLogin">Entrar</button>
+      <div class="msg" id="loginMsg"></div>
+    </div>
+
+    <div class="panel" id="panel-signup">
+      <div class="field">
+        <label>Nick no jogo</label>
+        <input type="text" id="signupNick">
+      </div>
+      <div class="field">
+        <label>E-mail</label>
+        <input type="email" id="signupEmail" autocomplete="email">
+      </div>
+      <div class="field">
+        <label>Senha</label>
+        <input type="password" id="signupPassword" autocomplete="new-password">
+      </div>
+      <button class="btn" id="btnSignup">Cadastrar</button>
+      <div class="msg" id="signupMsg"></div>
+    </div>
+
+    <div class="foot">seu cadastro precisa ser aprovado pela staff antes do primeiro acesso</div>
+  </div>
+
+<script>
+  const SUPABASE_URL = 'https://fqbgvqficprufgpuyjsh.supabase.co';
+  const SUPABASE_KEY = 'sb_publishable_W37jIu813NWTVcokSJnd2g_JbperpeB';
+  const client = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+  // ---- Tabs ----
+  document.querySelectorAll('.tab').forEach(tab=>{
+    tab.addEventListener('click', ()=>{
+      document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+      document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
+      tab.classList.add('active');
+      document.getElementById('panel-' + tab.dataset.tab).classList.add('active');
+    });
+  });
+
+  function showMsg(el, text, type){
+    el.textContent = text;
+    el.className = 'msg show ' + type;
+  }
+
+  // ---- Cadastro ----
+  document.getElementById('btnSignup').addEventListener('click', async ()=>{
+    const nick = document.getElementById('signupNick').value.trim();
+    const email = document.getElementById('signupEmail').value.trim();
+    const password = document.getElementById('signupPassword').value;
+    const msgEl = document.getElementById('signupMsg');
+    const btn = document.getElementById('btnSignup');
+
+    if(!nick || !email || !password){
+      showMsg(msgEl, 'Preencha todos os campos.', 'err');
+      return;
+    }
+    if(password.length < 6){
+      showMsg(msgEl, 'A senha precisa ter pelo menos 6 caracteres.', 'err');
+      return;
+    }
+
+    btn.disabled = true; btn.textContent = 'Verificando...';
+    const { data: blocked, error: blockedError } = await client.rpc('is_nick_blocked', { p_nick: nick });
+    if(blockedError){
+      btn.disabled = false; btn.textContent = 'Cadastrar';
+      showMsg(msgEl, 'Erro ao verificar o nick: ' + blockedError.message, 'err');
+      return;
+    }
+    if(blocked){
+      btn.disabled = false; btn.textContent = 'Cadastrar';
+      showMsg(msgEl, 'Esse nick pertence a um membro removido da guilda. Fale com a staff.', 'err');
+      return;
+    }
+
+    btn.textContent = 'Cadastrando...';
+    const { error } = await client.auth.signUp({
+      email, password,
+      options: { data: { nick } }
+    });
+    btn.disabled = false; btn.textContent = 'Cadastrar';
+
+    if(error){
+      showMsg(msgEl, `Erro (${error.code || error.status || '??'}): ${error.message}`, 'err');
+      console.error('Erro de cadastro completo:', error);
+      return;
+    }
+    showMsg(msgEl, 'Cadastro enviado! Aguarde a staff aprovar seu acesso antes de entrar.', 'pending');
+  });
+
+  // ---- Login ----
+  document.getElementById('btnLogin').addEventListener('click', async ()=>{
+    const email = document.getElementById('loginEmail').value.trim();
+    const password = document.getElementById('loginPassword').value;
+    const msgEl = document.getElementById('loginMsg');
+    const btn = document.getElementById('btnLogin');
+
+    if(!email || !password){
+      showMsg(msgEl, 'Preencha e-mail e senha.', 'err');
+      return;
+    }
+
+    btn.disabled = true; btn.textContent = 'Entrando...';
+    const { data, error } = await client.auth.signInWithPassword({ email, password });
+
+    if(error){
+      btn.disabled = false; btn.textContent = 'Entrar';
+      showMsg(msgEl, `Erro (${error.code || error.status || '??'}): ${error.message}`, 'err');
+      console.error('Erro de login completo:', error);
+      return;
+    }
+
+    // login certo -> confere se já foi aprovado pela staff
+    const { data: profile, error: profileError } = await client
+      .from('profiles')
+      .select('approved, staff, removed, nick')
+      .eq('id', data.user.id)
+      .single();
+
+    btn.disabled = false; btn.textContent = 'Entrar';
+
+    if(profileError || !profile){
+      showMsg(msgEl, 'Não consegui confirmar seu cadastro. Tente de novo.', 'err');
+      await client.auth.signOut();
+      return;
+    }
+
+    if(profile.removed){
+      showMsg(msgEl, 'Sua conta foi removida da guilda. Fale com a staff se isso for um engano.', 'err');
+      await client.auth.signOut();
+      return;
+    }
+
+    if(!profile.approved){
+      showMsg(msgEl, '⏳ Cadastro confirmado! Só falta a staff aprovar seu acesso — tenta de novo depois.', 'pending');
+      await client.auth.signOut();
+      return;
+    }
+
+    showMsg(msgEl, `Bem-vindo(a), ${profile.nick}! Redirecionando...`, 'ok');
+    setTimeout(()=>{ window.location.href = '/painel.html'; }, 900);
+  });
+
+  // se já tiver sessão ativa ao abrir a página, confere aprovação e redireciona
+  (async ()=>{
+    const { data: { session } } = await client.auth.getSession();
+    if(session){
+      const { data: profile } = await client.from('profiles').select('approved, removed').eq('id', session.user.id).single();
+      if(profile && profile.approved && !profile.removed){
+        window.location.href = '/painel.html';
+      } else if(profile && profile.removed){
+        await client.auth.signOut();
+      }
+    }
+  })();
+</script>
+</body>
+</html>
