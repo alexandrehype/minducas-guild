@@ -146,14 +146,6 @@
     { key:'Suporte', label:'Suporte' },
   ];
 
-  function trendIcon(tendencia){
-    if(!tendencia) return '—';
-    if(tendencia.startsWith('▲')) return '▲';
-    if(tendencia.startsWith('▼')) return '▼';
-    if(tendencia.startsWith('▬')) return '▬';
-    return tendencia === 'novo' ? '—' : tendencia;
-  }
-
   function renderHighlights(rows){
     const el = document.getElementById('highlightCols');
     el.innerHTML = GROUP_ORDER.map(grp => {

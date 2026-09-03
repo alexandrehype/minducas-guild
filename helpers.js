@@ -62,3 +62,11 @@ function formatTag(formato){
   if(!info) return `<span class="format-tag fmt-none">—</span>`;
   return `<span class="format-tag ${info.cls}">${info.text}</span>`;
 }
+
+function trendIcon(tendencia){
+  if(!tendencia) return '—';
+  if(tendencia.startsWith('▲')) return '▲';
+  if(tendencia.startsWith('▼')) return '▼';
+  if(tendencia.startsWith('▬')) return '▬';
+  return tendencia === 'novo' ? '—' : tendencia;
+}
