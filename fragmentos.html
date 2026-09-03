@@ -90,10 +90,10 @@
 
     <section>
       <h2>Fila atual</h2>
-      <div class="subtitle" style="margin-bottom:12px;">Ordem de quem é o próximo a receber. Removidos e contas com menos de 96h ficam marcados como não elegíveis, mas continuam na fila.</div>
+      <div class="subtitle" style="margin-bottom:12px;">Ordem de quem é o próximo a receber. Membros removidos não aparecem aqui — se forem readmitidos, voltam pro final da fila, como um novo membro.</div>
       <div class="table-scroll">
         <table class="queueTable">
-          <thead><tr><th>#</th><th>Nick</th><th>Elegível agora</th></tr></thead>
+          <thead><tr><th>#</th><th>Nick</th></tr></thead>
           <tbody id="queueBody"></tbody>
         </table>
       </div>
@@ -272,20 +272,10 @@
       .select('nick, player_id, queue_position')
       .order('queue_position', { ascending: true });
 
-    if(!queue || !queue.length){
-      document.getElementById('queueBody').innerHTML = '';
-      return;
-    }
-
-    const eligChecks = await Promise.all(queue.map(q =>
-      client.rpc('is_fragment_eligible', { p_nick: q.nick, p_player_id: q.player_id })
-    ));
-
-    document.getElementById('queueBody').innerHTML = queue.map((q, i) => `
+    document.getElementById('queueBody').innerHTML = (queue || []).map((q, i) => `
       <tr>
         <td>${i+1}</td>
         <td class="nickText">${q.nick}</td>
-        <td>${eligChecks[i].data ? '<span class="eligBadge ok">Elegível</span>' : '<span class="eligBadge no">Não elegível</span>'}</td>
       </tr>`).join('');
   }
 
