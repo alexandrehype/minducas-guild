@@ -157,4 +157,4 @@ tr:hover td{background:#221f28;}
 .chartTab:hover{color:var(--text); border-color:var(--gold-dim);}
 .chartTab.active{background:var(--gold); color:#1a1610; border-color:var(--gold); font-weight:700;}
 .chartEmptyNote{color:var(--muted); font-size:11px; font-family:'JetBrains Mono',ui-monospace,monospace; text-align:center; margin-top:8px;}
-.aliasNote{color:var(--muted); font-size:11.5px; font-family:'JetBrains Mono',ui-monospace,monospace; margin-top:8px;}
+.aliasInline{color:var(--muted); font-family:'JetBrains Mono',ui-monospace,monospace; font-weight:400; font-size:13px; margin-left:8px; vertical-align:middle;}

@@ -65,7 +65,8 @@ function formatTag(formato){
 
 // mostra outros nicks (in-game) já vinculados a esse mesmo jogador, diferentes do nick atual da conta
 async function renderAliases(client, containerEl, playerId, currentNick){
-  if(!playerId){ containerEl.style.display = 'none'; return; }
+  if(!containerEl) return;
+  if(!playerId){ containerEl.innerHTML = ''; return; }
   const { data } = await client
     .from('gvg_session_players')
     .select('nick')
@@ -74,12 +75,7 @@ async function renderAliases(client, containerEl, playerId, currentNick){
   const nicks = [...new Set((data || []).map(r => r.nick))]
     .filter(n => n.toLowerCase() !== (currentNick || '').toLowerCase());
 
-  if(nicks.length){
-    containerEl.style.display = 'block';
-    containerEl.textContent = `Também jogou como: ${nicks.join(', ')}`;
-  } else {
-    containerEl.style.display = 'none';
-  }
+  containerEl.innerHTML = nicks.length ? `(também: ${nicks.join(', ')})` : '';
 }
 
 function trendIcon(tendencia){
