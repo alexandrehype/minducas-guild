@@ -88,7 +88,7 @@ async function renderFragmentHistory(client, containerEl, playerId, nick){
 
   const STATUS_LABEL = { pending:'Pendente', confirmed:'Confirmado', declined:'Desistiu' };
   containerEl.innerHTML = `<div class="table-scroll"><table>
-    <thead><tr><th>Data</th><th class="num">Pág.</th><th class="num">Frag.</th><th>Status</th></tr></thead>
+    <thead><tr><th>Data</th><th>Status</th></tr></thead>
     <tbody>
       ${items.map(it => {
         const dt = it.fragment_distributions?.event_date
@@ -96,8 +96,6 @@ async function renderFragmentHistory(client, containerEl, playerId, nick){
           : '—';
         return `<tr>
           <td>${dt}</td>
-          <td class="num">${it.page_number}</td>
-          <td class="num">${it.frag_number}</td>
           <td><span class="itemStatus ${it.status}">${STATUS_LABEL[it.status] || it.status}</span></td>
         </tr>`;
       }).join('')}
