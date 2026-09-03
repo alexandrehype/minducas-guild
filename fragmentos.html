@@ -133,18 +133,17 @@
         <td class="num">${it.frag_number}</td>
         <td><span class="itemStatus ${it.status}">${it.status === 'pending' ? 'Pendente' : it.status === 'confirmed' ? 'Confirmado' : 'Desistiu'}</span></td>
         <td>
-          ${viewerIsStaff && it.status === 'pending' ? `
-            <button class="btnMini take" data-act="take" data-id="${it.item_id}">Pegou</button>
+          ${viewerIsStaff && it.status === 'confirmed' ? `
             <button class="btnMini decline" data-act="decline" data-id="${it.item_id}">Desistiu</button>
+            <button class="btnMini decline" data-act="revert" data-id="${it.item_id}">Outro pegou no lugar</button>
           ` : ''}
-          ${viewerIsStaff && it.status === 'confirmed' ? `<button class="btnMini decline" data-act="revert" data-id="${it.item_id}">Outro pegou no lugar</button>` : ''}
         </td>
       </tr>`).join('');
 
     document.querySelectorAll('#itemsBody [data-act]').forEach(btn => {
       btn.addEventListener('click', () => {
         if(btn.dataset.act === 'revert') handleRevert(btn.dataset.id);
-        else handleConfirm(btn.dataset.id, btn.dataset.act === 'take');
+        else handleDecline(btn.dataset.id);
       });
     });
   }
@@ -173,9 +172,9 @@
     loadHistory();
   }
 
-  async function handleConfirm(itemId, confirmed){
+  async function handleDecline(itemId){
     const status = document.getElementById('generateStatus');
-    const { data, error } = await client.rpc('confirm_fragment_item', { p_item_id: itemId, p_confirmed: confirmed });
+    const { data, error } = await client.rpc('decline_fragment_item', { p_item_id: itemId });
 
     if(error){
       status.className = 'status err';
@@ -184,24 +183,20 @@
     }
 
     const result = data[0];
-    // atualiza o item confirmado/desistido localmente
     const idx = currentItems.findIndex(it => it.item_id === itemId);
-    if(idx >= 0) currentItems[idx].status = result.status;
+    if(idx >= 0) currentItems[idx].status = 'declined';
 
     if(result.action === 'replaced'){
       currentItems.push({
         item_id: result.new_item_id, position_in_list: result.position_in_list,
         nick: result.new_nick, page_number: result.page_number, frag_number: result.frag_number,
-        status: 'pending',
+        status: 'confirmed',
       });
       status.className = 'status ok';
       status.textContent = `${result.new_nick} entrou no lugar de quem desistiu (pág. ${result.page_number}, frag. ${result.frag_number}).`;
-    } else if(result.action === 'declined_no_replacement'){
+    } else {
       status.className = 'status err';
       status.textContent = `Ninguém elegível sobrou na fila pra substituir a posição ${result.position_in_list}.`;
-    } else {
-      status.className = 'status ok';
-      status.textContent = '';
     }
 
     renderItems();
@@ -243,7 +238,7 @@
     status.className = data.length < count ? 'status err' : 'status ok';
     status.textContent = data.length < count
       ? `Atenção: só havia ${data.length} jogador(es) elegível(is) na fila (pediu ${count}).`
-      : `Lista gerada com ${data.length} jogador(es). Confirme ou registre desistência de cada um.`;
+      : `Lista gerada com ${data.length} jogador(es), já confirmados. Marque "Desistiu" só se alguém não quiser pegar.`;
 
     currentItems = data;
     currentDistributionId = data[0]?.distribution_id || null;
