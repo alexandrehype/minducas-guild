@@ -7,10 +7,10 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=EB+Garamond:ital,wght@0,400;0,500;0,600;1,400&family=JetBrains+Mono:wght@400;500;600;700&family=Russo+One&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="theme.css?v=3">
+<link rel="stylesheet" href="theme.css?v=4">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 <script src="nav.js?v=3"></script>
-<script src="helpers.js?v=3"></script>
+<script src="helpers.js?v=4"></script>
 <style>
   .charHead{margin-bottom:22px;}
   .charName{font-family:'Russo One',Georgia,serif; font-weight:400; letter-spacing:0.5px; font-size:24px; color:var(--text); display:flex; align-items:center;}
@@ -52,6 +52,18 @@
     <section id="charSection">
       <h2>Meu Personagem</h2>
       <div id="charContent"></div>
+    </section>
+
+    <section id="chartSection">
+      <h2>Últimas 5 Pontuações</h2>
+      <div class="chartTabs" id="chartTabs">
+        <button class="chartTab active" data-metric="pontos">Pontos</button>
+        <button class="chartTab" data-metric="abates">Abates</button>
+        <button class="chartTab" data-metric="assistencias">Assistências</button>
+        <button class="chartTab" data-metric="mortes">Mortes</button>
+      </div>
+      <div id="scoreChart"></div>
+      <div class="chartEmptyNote" style="display:none;">Ainda não há GvGs registradas — gráfico zerado.</div>
     </section>
 
     <section id="freqSection">
@@ -187,7 +199,42 @@
       .eq('player_id', currentProfile.id)
       .maybeSingle();
     renderChar(currentProfile, row);
+    loadScoreChart();
   }
+
+  let chartEntries = [];
+  let currentMetric = 'pontos';
+
+  async function loadScoreChart(){
+    const { data } = await client
+      .from('gvg_session_players')
+      .select('pontos, abates, assistencias, mortes, gvg_sessions(gvg_date, label)')
+      .eq('player_id', currentProfile.id)
+      .order('gvg_date', { foreignTable: 'gvg_sessions', ascending: false })
+      .limit(5);
+
+    const rows = (data || []).slice().reverse();
+    chartEntries = rows.map(r => ({
+      pontos: Math.round(r.pontos ?? 0),
+      abates: r.abates ?? 0,
+      assistencias: r.assistencias ?? 0,
+      mortes: r.mortes ?? 0,
+      label: r.gvg_sessions?.gvg_date
+        ? new Date(r.gvg_sessions.gvg_date + 'T00:00:00').toLocaleDateString('pt-BR', { day:'2-digit', month:'2-digit' })
+        : '—',
+    }));
+
+    renderScoreChart(document.getElementById('scoreChart'), chartEntries, currentMetric);
+  }
+
+  document.getElementById('chartTabs').addEventListener('click', (e)=>{
+    const btn = e.target.closest('.chartTab');
+    if(!btn) return;
+    document.querySelectorAll('.chartTab').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    currentMetric = btn.dataset.metric;
+    renderScoreChart(document.getElementById('scoreChart'), chartEntries, currentMetric);
+  });
 
   (async ()=>{
     const { data: { session } } = await client.auth.getSession();

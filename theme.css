@@ -147,3 +147,13 @@ tr:hover td{background:#221f28;}
 /* ---------- Tela de acesso (gate) ---------- */
 .gate{max-width:420px; margin:80px auto; text-align:center; padding:0 20px;}
 .gate p{color:var(--muted); font-family:'JetBrains Mono',ui-monospace,monospace; font-size:13px;}
+
+/* ---------- Gráfico de barras (últimas pontuações) ---------- */
+.chartTabs{display:flex; gap:6px; margin-bottom:18px; flex-wrap:wrap;}
+.chartTab{
+  font-family:'JetBrains Mono',ui-monospace,monospace; font-weight:600; font-size:11px; letter-spacing:0.5px; text-transform:uppercase;
+  padding:7px 14px; border-radius:3px; border:1px solid var(--line); background:transparent; color:var(--muted); cursor:pointer;
+}
+.chartTab:hover{color:var(--text); border-color:var(--gold-dim);}
+.chartTab.active{background:var(--gold); color:#1a1610; border-color:var(--gold); font-weight:700;}
+.chartEmptyNote{color:var(--muted); font-size:11px; font-family:'JetBrains Mono',ui-monospace,monospace; text-align:center; margin-top:8px;}

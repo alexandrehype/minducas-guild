@@ -70,3 +70,41 @@ function trendIcon(tendencia){
   if(tendencia.startsWith('▬')) return '▬';
   return tendencia === 'novo' ? '—' : tendencia;
 }
+
+// desenha um gráfico de barras simples (SVG) com até 5 pontos, sempre preenchendo 5 posições
+// entries: array cronológico (mais antigo -> mais recente) de {label, pontos, abates, assistencias, mortes}
+function renderScoreChart(containerEl, entries, metric){
+  const METRIC_LABELS = { pontos:'Pontos', abates:'Abates', assistencias:'Assistências', mortes:'Mortes' };
+  const slots = 5;
+  const padded = Array(Math.max(0, slots - entries.length)).fill(null).concat(entries).slice(-slots);
+
+  const values = padded.map(e => e ? Number(e[metric]) || 0 : 0);
+  const maxVal = Math.max(1, ...values);
+
+  const width = 560, height = 190, padding = 8, bottomPad = 34, topPad = 26;
+  const gap = 16;
+  const barW = (width - padding * 2 - gap * (slots - 1)) / slots;
+  const chartH = height - bottomPad - topPad;
+
+  let bars = '';
+  padded.forEach((e, i) => {
+    const val = values[i];
+    const h = maxVal > 0 ? (val / maxVal) * chartH : 0;
+    const x = padding + i * (barW + gap);
+    const y = topPad + (chartH - h);
+    const label = e ? e.label : '—';
+    const filled = !!e;
+    bars += `
+      <rect x="${x}" y="${y}" width="${barW}" height="${Math.max(h,2)}" rx="3"
+        fill="${filled ? 'var(--gold)' : 'var(--line)'}" opacity="${filled ? '0.9' : '0.5'}"></rect>
+      <text x="${x + barW/2}" y="${y - 8}" text-anchor="middle" font-size="13" font-weight="700"
+        font-family="'JetBrains Mono',ui-monospace,monospace" fill="${filled ? 'var(--gold)' : 'var(--muted)'}">${val}</text>
+      <text x="${x + barW/2}" y="${height - 12}" text-anchor="middle" font-size="10"
+        font-family="'JetBrains Mono',ui-monospace,monospace" fill="var(--muted)">${label}</text>`;
+  });
+
+  containerEl.innerHTML = `<svg viewBox="0 0 ${width} ${height}" style="width:100%; height:auto; display:block;">${bars}</svg>`;
+
+  const noteEl = containerEl.parentElement?.querySelector('.chartEmptyNote');
+  if(noteEl) noteEl.style.display = entries.length === 0 ? 'block' : 'none';
+}
