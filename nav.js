@@ -4,7 +4,9 @@
 function renderTopNav(supabaseClient, profile, currentPage){
   const topbarEl = document.getElementById('topbar');
   if(topbarEl){
-    topbarEl.innerHTML = `<img class="bannerArt" src="icones/banner.png?v=3" alt="Minducas" onerror="this.style.display='none'">`;
+    topbarEl.innerHTML = `
+      <img class="bannerArt" src="icones/banner.png?v=3" alt="Minducas" onerror="this.style.display='none'">
+      <button class="topbarLogout" id="topbarLogoutBtn">Sair</button>`;
   }
 
   const sidebarEl = document.getElementById('sidebar');
@@ -22,11 +24,13 @@ function renderTopNav(supabaseClient, profile, currentPage){
       ${items.filter(i => i.show).map(i =>
         `<a href="${i.href}" class="navlink${i.page === currentPage ? ' active' : ''}">${i.label}</a>`
       ).join('')}
-      <button class="navlink navbtn" id="navLogoutBtn">Sair</button>
     </nav>`;
 
-  document.getElementById('navLogoutBtn').addEventListener('click', async ()=>{
-    await supabaseClient.auth.signOut();
-    window.location.href = 'index.html';
-  });
+  const topbarLogoutBtn = document.getElementById('topbarLogoutBtn');
+  if(topbarLogoutBtn){
+    topbarLogoutBtn.addEventListener('click', async ()=>{
+      await supabaseClient.auth.signOut();
+      window.location.href = 'index.html';
+    });
+  }
 }
