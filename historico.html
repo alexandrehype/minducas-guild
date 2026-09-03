@@ -7,10 +7,10 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=EB+Garamond:ital,wght@0,400;0,500;0,600;1,400&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="theme.css?v=5">
+<link rel="stylesheet" href="theme.css?v=6">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
-<script src="nav.js?v=4"></script>
-<script src="helpers.js?v=5"></script>
+<script src="nav.js?v=6"></script>
+<script src="helpers.js?v=6"></script>
 <style>
   .history-item{border:1px solid var(--line); border-radius:4px; margin-bottom:12px; background:var(--panel); overflow:hidden;}
   .history-item summary{
@@ -21,8 +21,37 @@
   .history-item summary::-webkit-details-marker{display:none;}
   .history-item summary .h-meta{color:var(--muted); font-size:11.5px;}
   .history-total{color:var(--gold); font-weight:700;}
-  .history-item .table-scroll{margin:0 18px 18px;}
+  .history-body{margin:0 18px 18px;}
+  .scoreLine{font-family:'JetBrains Mono',ui-monospace,monospace; font-size:13px; margin-bottom:14px; display:flex; align-items:center; gap:12px; flex-wrap:wrap;}
+  .scoreLine .vs{color:var(--gold); font-weight:700; font-size:15px;}
+  .scoreLine .opp{color:var(--text);}
+  .scoreLine .noScore{color:var(--muted); font-style:italic;}
+  .editBtn{font-family:'JetBrains Mono',ui-monospace,monospace; font-weight:600; font-size:10px; letter-spacing:0.5px; text-transform:uppercase;
+    padding:4px 10px; border-radius:3px; border:1px solid var(--gold-dim); color:var(--gold); background:transparent; cursor:pointer;}
+  .editBtn:hover{background:var(--gold); color:#1a1610;}
+  .arenaTabs{display:flex; gap:6px; margin-bottom:12px;}
+  .arenaTabBtn{
+    font-family:'JetBrains Mono',ui-monospace,monospace; font-weight:600; font-size:11px; letter-spacing:0.5px; text-transform:uppercase;
+    padding:6px 14px; border-radius:3px; border:1px solid var(--line); background:transparent; color:var(--muted); cursor:pointer;
+  }
+  .arenaTabBtn.active{background:var(--gold); color:#1a1610; border-color:var(--gold); font-weight:700;}
+  .arenaPanel{display:none;}
+  .arenaPanel.active{display:block;}
   table{min-width:950px;}
+
+  .modal-overlay{position:fixed; inset:0; background:rgba(8,7,10,.72); display:flex; align-items:center; justify-content:center; z-index:999; padding:20px;}
+  .modal-box{background:var(--panel); border:1px solid var(--gold-dim); border-radius:5px; padding:26px; max-width:380px; width:100%;}
+  .modal-title{font-family:'JetBrains Mono',ui-monospace,monospace; font-size:13px; letter-spacing:1px; text-transform:uppercase; color:var(--gold); margin-bottom:18px;}
+  .field{margin-bottom:16px;}
+  .field label{display:block; font-size:11px; font-family:'JetBrains Mono',ui-monospace,monospace; color:var(--muted); margin-bottom:6px;}
+  .field input{width:100%; background:#161318; border:1px solid var(--line); color:var(--text); padding:10px 11px; border-radius:3px; font-size:14px; font-family:Georgia,serif;}
+  .scoreRow{display:flex; align-items:center; gap:10px;}
+  .scoreRow input{text-align:center;}
+  .scoreRow .x{color:var(--muted); font-family:'JetBrains Mono',ui-monospace,monospace;}
+  .modal-actions{display:flex; justify-content:flex-end; gap:10px; margin-top:6px;}
+  .modal-status{font-size:12px; font-family:'JetBrains Mono',ui-monospace,monospace; margin-top:10px; min-height:16px;}
+  .modal-status.err{color:var(--red);}
+  .modal-status.ok{color:var(--green);}
 </style>
 </head>
 <body>
@@ -32,7 +61,7 @@
   <div class="wrap" id="app" style="display:none;">
     <header>
       <h1 class="pageTitle">Histórico de GvGs</h1>
-      <div class="subtitle">todas as sessões já importadas</div>
+      <div class="subtitle">todos os eventos já importados</div>
     </header>
 
     <div id="historyList"></div>
@@ -50,13 +79,19 @@
   const app = document.getElementById('app');
   const gate = document.getElementById('gate');
   const gateMsg = document.getElementById('gateMsg');
+  let viewerIsOwner = false;
+  let eventsCache = {};
+
+  const ARENA_ORDER = [
+    { key:'primaria', label:'Primária' },
+    { key:'secundaria', label:'Secundária' },
+  ];
 
   function renderSessionRows(players){
     return players.map(p => `
       <tr>
         <td>${p.player_id ? `<a href="perfil.html?id=${p.player_id}" class="nickText" style="color:var(--text); text-decoration:none; border-bottom:1px dotted var(--muted);">${p.nick}</a>` : `<span class="nickText">${p.nick}</span>`}${p.staff ? '<span class="staffBadge">Staff</span>' : ''}</td>
         <td>${classIcon(p.classe, 22)}</td>
-        <td>${arenaTag(p.arena)}</td>
         <td>${formatTag(p.formato)}</td>
         <td class="num">${p.marcas ?? 0}</td>
         <td class="num">${p.ocupacao_s ?? 0}</td>
@@ -71,11 +106,85 @@
       </tr>`).join('');
   }
 
+  function renderArenaTable(players){
+    return `<div class="table-scroll"><table>
+      <thead><tr>
+        <th>Nick</th><th>Classe</th><th>Formato</th>
+        <th class="num">Marcas</th><th class="num">Oc. S</th><th class="num">Oc. A</th><th class="num">Oc. B</th>
+        <th class="num">Monst.</th><th class="num">Chefe</th>
+        <th class="num">Abates</th><th class="num">Assist.</th><th class="num">Mortes</th><th class="num">Pontos</th>
+      </tr></thead>
+      <tbody>${renderSessionRows(players)}</tbody>
+    </table></div>`;
+  }
+
+  function scoreLineHtml(ev){
+    if(ev.opponent_guild || ev.our_score != null || ev.opponent_score != null){
+      const ourScore = ev.our_score ?? '—';
+      const oppScore = ev.opponent_score ?? '—';
+      return `<span class="vs">Minducas ${ourScore} x ${oppScore} ${ev.opponent_guild || '?'}</span>`;
+    }
+    return `<span class="noScore">placar não registrado</span>`;
+  }
+
+  function openEditEventModal(eventId){
+    const ev = eventsCache[eventId];
+    const overlay = document.createElement('div');
+    overlay.className = 'modal-overlay';
+    overlay.innerHTML = `
+      <div class="modal-box">
+        <div class="modal-title">Editar evento — ${ev.label}</div>
+        <div class="field">
+          <label>Guilda adversária</label>
+          <input type="text" id="editOpponent" value="${ev.opponent_guild || ''}" placeholder="ex: Tempest">
+        </div>
+        <div class="field">
+          <label>Placar (Minducas x Adversária)</label>
+          <div class="scoreRow">
+            <input type="number" id="editOurScore" value="${ev.our_score ?? ''}" placeholder="384">
+            <span class="x">×</span>
+            <input type="number" id="editOppScore" value="${ev.opponent_score ?? ''}" placeholder="0">
+          </div>
+        </div>
+        <div class="modal-actions">
+          <button class="btn secondary" id="editCancel">Cancelar</button>
+          <button class="btn primary" id="editSave">Salvar</button>
+        </div>
+        <div class="modal-status" id="editStatus"></div>
+      </div>`;
+    document.body.appendChild(overlay);
+
+    const close = () => overlay.remove();
+    overlay.addEventListener('click', e => { if(e.target === overlay) close(); });
+    document.getElementById('editCancel').addEventListener('click', close);
+
+    document.getElementById('editSave').addEventListener('click', async ()=>{
+      const opponent_guild = document.getElementById('editOpponent').value.trim() || null;
+      const ourVal = document.getElementById('editOurScore').value;
+      const oppVal = document.getElementById('editOppScore').value;
+      const statusEl = document.getElementById('editStatus');
+
+      const { error } = await client.from('gvg_events').update({
+        opponent_guild,
+        our_score: ourVal === '' ? null : Number(ourVal),
+        opponent_score: oppVal === '' ? null : Number(oppVal),
+      }).eq('id', eventId);
+
+      if(error){
+        statusEl.className = 'modal-status err';
+        statusEl.textContent = 'Erro ao salvar: ' + error.message;
+        return;
+      }
+      close();
+      loadHistory();
+    });
+  }
+
   async function loadHistory(){
-    const { data: sessions, error } = await client
-      .from('gvg_sessions')
-      .select('id, label, gvg_date')
-      .order('gvg_date', { ascending: false });
+    const { data: events, error } = await client
+      .from('gvg_events')
+      .select('id, label, event_date, opponent_guild, our_score, opponent_score')
+      .order('event_date', { ascending: false });
 
     if(error){
       document.getElementById('historyStatus').className = 'status err';
@@ -83,42 +192,73 @@
       return;
     }
 
-    document.getElementById('historyEmpty').style.display = (sessions && sessions.length) ? 'none' : 'block';
-    if(!sessions || !sessions.length) return;
+    document.getElementById('historyEmpty').style.display = (events && events.length) ? 'none' : 'block';
+    if(!events || !events.length) return;
 
-    const { data: allPlayers, error: playersError } = await client
+    events.forEach(ev => eventsCache[ev.id] = ev);
+
+    const { data: sessions } = await client
+      .from('gvg_sessions')
+      .select('id, gvg_event_id, arena');
+
+    const { data: allPlayers } = await client
       .from('gvg_session_players')
       .select('*');
 
-    if(playersError){
-      document.getElementById('historyStatus').className = 'status err';
-      document.getElementById('historyStatus').textContent = 'Erro ao carregar jogadores das sessões: ' + playersError.message;
-      return;
-    }
+    document.getElementById('historyList').innerHTML = events.map(ev => {
+      const evSessions = (sessions || []).filter(s => s.gvg_event_id === ev.id);
+      const evPlayers = (allPlayers || []).filter(p => evSessions.some(s => s.id === p.session_id));
+      const total = evPlayers.reduce((s,p) => s + (Number(p.pontos)||0), 0);
+      const dt = ev.event_date ? new Date(ev.event_date + 'T00:00:00').toLocaleDateString('pt-BR') : '—';
 
-    document.getElementById('historyList').innerHTML = sessions.map(sess => {
-      const players = (allPlayers || []).filter(p => p.session_id === sess.id).sort((a,b) => (b.pontos||0) - (a.pontos||0));
-      const total = players.reduce((s,p) => s + (Number(p.pontos)||0), 0);
-      const dt = sess.gvg_date ? new Date(sess.gvg_date + 'T00:00:00').toLocaleDateString('pt-BR') : '—';
+      const availableArenas = ARENA_ORDER.filter(a => evSessions.some(s => s.arena === a.key));
+      const tabsToShow = availableArenas.length ? availableArenas : ARENA_ORDER;
+
+      const tabsHtml = tabsToShow.length > 1 ? `<div class="arenaTabs" data-event="${ev.id}">
+        ${tabsToShow.map((a,i) => `<button class="arenaTabBtn${i===0?' active':''}" data-arena="${a.key}">${a.label}</button>`).join('')}
+      </div>` : '';
+
+      const panelsHtml = tabsToShow.map((a,i) => {
+        const sess = evSessions.find(s => s.arena === a.key);
+        const players = sess ? evPlayers.filter(p => p.session_id === sess.id).sort((x,y)=>(y.pontos||0)-(x.pontos||0)) : [];
+        return `<div class="arenaPanel${i===0?' active':''}" data-arena="${a.key}">
+          ${players.length ? renderArenaTable(players) : '<div class="empty">Sem dados dessa arena.</div>'}
+        </div>`;
+      }).join('');
 
       return `<details class="history-item">
         <summary>
-          <span>${sess.label}</span>
-          <span class="h-meta">${dt} · ${players.length} jogador(es) · <span class="history-total">${Math.round(total)} pts</span></span>
+          <span>${ev.label}</span>
+          <span class="h-meta">${dt} · ${evPlayers.length} jogador(es) · <span class="history-total">${Math.round(total)} pts</span></span>
         </summary>
-        <div class="table-scroll">
-          <table>
-            <thead><tr>
-              <th>Nick</th><th>Classe</th><th>Arena</th><th>Formato</th>
-              <th class="num">Marcas</th><th class="num">Oc. S</th><th class="num">Oc. A</th><th class="num">Oc. B</th>
-              <th class="num">Monst.</th><th class="num">Chefe</th>
-              <th class="num">Abates</th><th class="num">Assist.</th><th class="num">Mortes</th><th class="num">Pontos</th>
-            </tr></thead>
-            <tbody>${renderSessionRows(players)}</tbody>
-          </table>
+        <div class="history-body">
+          <div class="scoreLine">
+            ${scoreLineHtml(ev)}
+            ${viewerIsOwner ? `<button class="editBtn" data-edit="${ev.id}">Editar</button>` : ''}
+          </div>
+          ${tabsHtml}
+          ${panelsHtml}
         </div>
       </details>`;
     }).join('');
+
+    document.querySelectorAll('.arenaTabs').forEach(tabGroup => {
+      tabGroup.addEventListener('click', e => {
+        const btn = e.target.closest('.arenaTabBtn');
+        if(!btn) return;
+        const arena = btn.dataset.arena;
+        const details = tabGroup.closest('.history-item');
+        details.querySelectorAll('.arenaTabBtn').forEach(b => b.classList.toggle('active', b === btn));
+        details.querySelectorAll('.arenaPanel').forEach(p => p.classList.toggle('active', p.dataset.arena === arena));
+      });
+    });
+
+    document.querySelectorAll('[data-edit]').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.preventDefault();
+        openEditEventModal(btn.dataset.edit);
+      });
+    });
   }
 
   (async ()=>{
@@ -131,7 +271,7 @@
 
     const { data: profile, error } = await client
       .from('profiles')
-      .select('approved, staff, removed')
+      .select('approved, staff, removed, owner')
       .eq('id', session.user.id)
       .single();
 
@@ -146,6 +286,7 @@
       return;
     }
 
+    viewerIsOwner = !!profile.owner;
     renderTopNav(client, profile, 'historico');
     gate.style.display = 'none';
     app.style.display = 'block';

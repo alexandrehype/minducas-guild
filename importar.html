@@ -7,10 +7,10 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=EB+Garamond:ital,wght@0,400;0,500;0,600;1,400&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="theme.css?v=5">
+<link rel="stylesheet" href="theme.css?v=6">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
-<script src="nav.js?v=4"></script>
-<script src="helpers.js?v=5"></script>
+<script src="nav.js?v=6"></script>
+<script src="helpers.js?v=6"></script>
 <style>
   .dropzone{
     border:1px dashed var(--gold-dim); border-radius:4px; padding:26px; text-align:center;
@@ -270,11 +270,46 @@
     const importStatus = document.getElementById('importStatus');
     btn.disabled = true;
     importStatus.className = 'status';
+    importStatus.textContent = 'Vinculando ao evento de GvG...';
+
+    const eventDate = sessionMeta.date || new Date().toISOString().slice(0,10);
+    const cleanLabel = sessionMeta.label.replace(/\s*-\s*(Prim[áa]ria|Secund[áa]ria)\s*$/i, '').trim() || sessionMeta.label;
+
+    // acha o evento já existente pra essa data, ou cria um novo
+    let eventId;
+    const { data: existingEvent } = await client
+      .from('gvg_events')
+      .select('id')
+      .eq('event_date', eventDate)
+      .maybeSingle();
+
+    if(existingEvent){
+      eventId = existingEvent.id;
+    } else {
+      const { data: newEvent, error: eventError } = await client
+        .from('gvg_events')
+        .insert({ event_date: eventDate, label: cleanLabel })
+        .select('id')
+        .single();
+      if(eventError || !newEvent){
+        importStatus.className = 'status err';
+        importStatus.textContent = 'Erro ao criar evento: ' + (eventError?.message || 'desconhecido');
+        btn.disabled = false;
+        return;
+      }
+      eventId = newEvent.id;
+    }
+
+    // arena dominante desta sessão (baseado na maioria das linhas do CSV)
+    const arenaCounts = {};
+    parsedRows.forEach(r => { arenaCounts[r.arena] = (arenaCounts[r.arena]||0) + 1; });
+    const sessionArena = Object.keys(arenaCounts).sort((a,b)=>arenaCounts[b]-arenaCounts[a])[0] || 'primaria';
+
     importStatus.textContent = 'Criando registro da sessão...';
 
     const { data: sessionRow, error: sessionError } = await client
       .from('gvg_sessions')
-      .insert({ label: sessionMeta.label, gvg_date: sessionMeta.date || new Date().toISOString().slice(0,10) })
+      .insert({ label: sessionMeta.label, gvg_date: eventDate, arena: sessionArena, gvg_event_id: eventId })
       .select('id')
       .single();
 
